@@ -11,6 +11,7 @@ export type Loan = {
   status: "Pending" | "Approved" | "Rejected"
   tenor: number
   cicilan_ke: number
+  created_at?: string
 }
 
 interface LoanState {
