@@ -164,7 +164,7 @@ export default function LaporanPage() {
   const handleExportPDF = () => {
     setIsExportingPDF(true)
     const img = new Image()
-    img.src = companyLogo || "/logo.png"
+    img.src = companyLogo || "/Logo.png"
     
     const generatePDF = (hasLogo = false) => {
       const doc = new jsPDF()

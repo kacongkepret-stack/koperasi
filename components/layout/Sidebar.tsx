@@ -74,7 +74,7 @@ export default function Sidebar() {
         <div className="h-16 flex items-center px-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <div className="shrink-0 flex items-center justify-center">
-            <img src="/logo.png" alt="Logo" className="w-9 object-contain" />
+            <img src="/Logo.png" alt="Logo" className="w-9 object-contain" />
           </div>
           {(!isSidebarCollapsed || isMobileMenuOpen) && (
             <div className="flex flex-col overflow-hidden">

@@ -52,7 +52,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex flex-col items-center justify-center space-y-3 mb-6">
           <div className="shrink-0 flex items-center justify-center h-16 w-16 mb-2">
-            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+            <img src="/Logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div className="text-center">
             <h1 className="text-xl font-bold tracking-tight text-slate-900">{companyName}</h1>
