@@ -237,7 +237,7 @@ export default function LaporanPage() {
       else if (activeTab === "keuangan") {
         doc.text(`LAPORAN KEUANGAN KOPERASI PER ${currentDateStr}`, 14, 34)
         
-        let bodyData = []
+        let bodyData: any[] = []
         
         // PEMASUKAN
         bodyData.push([{ content: 'I Pemasukan', colSpan: 3, styles: { fontStyle: 'bold', fillColor: [209, 250, 229], textColor: [6, 78, 59] } }])
