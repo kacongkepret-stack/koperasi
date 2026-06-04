@@ -277,7 +277,7 @@ export default function LaporanPage() {
 
         autoTable(doc, {
           startY: 42,
-          body: bodyData,
+          body: bodyData as any,
           theme: 'plain',
           styles: { cellPadding: 2, fontSize: 9, lineColor: [226, 232, 240], lineWidth: 0.1 },
         })
