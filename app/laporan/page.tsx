@@ -320,26 +320,30 @@ export default function LaporanPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="bg-white/60 p-1.5 rounded-xl inline-flex flex-wrap gap-1 border border-slate-200/60 shadow-sm backdrop-blur-md w-max max-w-full overflow-x-auto mb-2">
+        {[
+          { id: "peminjam", label: "Daftar Peminjam" },
+          { id: "tabungan", label: "Data Tabungan" },
+          { id: "rugilaba", label: "Rugi - Laba" },
+          { id: "keuangan", label: "Laporan Keuangan" }
+        ].map(tab => (
+          <button 
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={cn(
+              "px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all whitespace-nowrap",
+              activeTab === tab.id 
+                ? "bg-slate-900 text-white shadow-md" 
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <Card className="shadow-sm border-slate-200/60 overflow-hidden">
-        <div className="bg-slate-50/50 border-b border-slate-100 flex gap-4 px-4 pt-3 overflow-x-auto">
-          {[
-            { id: "peminjam", label: "Daftar Peminjam" },
-            { id: "tabungan", label: "Data Tabungan" },
-            { id: "rugilaba", label: "Rugi - Laba" },
-            { id: "keuangan", label: "Laporan Keuangan" }
-          ].map(tab => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={cn(
-                "pb-2 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap",
-                activeTab === tab.id ? "border-emerald-600 text-emerald-700" : "border-transparent text-slate-500 hover:text-slate-700"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
         
         <CardContent className="p-0">
           
