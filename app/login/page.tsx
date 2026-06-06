@@ -118,7 +118,7 @@ export default function LoginPage() {
           </div>
           <div className="bg-slate-50/50 border-t border-slate-100 p-4 text-center">
             <p className="text-[10px] text-slate-500 font-medium">
-              Akses & peran Anda akan ditentukan otomatis oleh sistem.
+              Gunakan NIK terdaftar untuk masuk. Hubungi Pengurus jika ada kendala.
             </p>
           </div>
         </div>
