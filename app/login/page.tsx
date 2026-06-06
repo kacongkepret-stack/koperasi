@@ -78,7 +78,7 @@ export default function LoginPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Contoh: nyoman@hotel atau ADMIN"
+                    placeholder="Contoh: nyoman@hotel"
                     className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50/50 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                     required
                   />
