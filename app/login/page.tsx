@@ -18,29 +18,43 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // Check Super Admin Bypass
-    if (username.toUpperCase() === "ADMIN" && password === "admin123") {
-      login("ADMIN", "admin", "Super Administrator")
-      router.push("/")
-      return
-    }
 
-    // Verify member in database
-    const { data, error } = await supabase.from('members').select('*').eq('nik', username.toLowerCase()).single()
-    
-    if (data && !error) {
-      // Check database password (fallback to 123456 if undefined, just in case old rows lack it)
+    try {
+      // Mengambil data user spesifik dari tabel members berdasarkan NIK/Username
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('nik', username.toLowerCase())
+        .single()
+      
+      // Jika error (misal tidak ada koneksi) atau data tidak ditemukan
+      if (error || !data) {
+        alert("Username tidak ditemukan atau Anda tidak memiliki akses!")
+        setIsLoading(false)
+        return
+      }
+
+      // Mengecek password (fallback "123456" untuk baris data lama yang belum punya password)
       const validPassword = data.password || "123456"
+      
       if (password === validPassword) {
-        login(data.nik, "member", data.nama)
+        // LOGIKA ROLE DINAMIS (SCALABLE):
+        // Jika di tabel ada kolom 'role', gunakan itu.
+        // Jika kosong/null, fallback: NIK 'admin' menjadi role 'admin', sisanya 'member'.
+        const userRole = data.role ? data.role : (data.nik === 'admin' ? 'admin' : 'member')
+        
+        // Memasukkan kredensial ke global state Zustand
+        login(data.nik, userRole, data.nama)
+        
+        // Redirect ke dashboard utama
         router.push("/")
       } else {
         alert("Password salah! (Hint: gunakan password default: 123456)")
         setIsLoading(false)
       }
-    } else {
-      alert("Username tidak ditemukan atau Anda tidak memiliki akses!")
+    } catch (err) {
+      console.error("Critical Error during login:", err)
+      alert("Terjadi kesalahan sistem saat mencoba login.")
       setIsLoading(false)
     }
   }
