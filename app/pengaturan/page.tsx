@@ -8,9 +8,8 @@ import { Save, Plus, Trash2, KeyRound } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import { useLoanStore } from "@/store/loanStore"
 import { useMemberStore } from "@/store/memberStore"
-import { supabase } from "@/lib/supabase" // Wajib import supabase
+import { supabase } from "@/lib/supabase"
 
-// Menambahkan "keamanan" ke dalam tipe Tab
 type TabType = "profil" | "departemen" | "pengeluaran" | "operasional" | "keamanan"
 
 export default function PengaturanPage() {
@@ -26,7 +25,6 @@ export default function PengaturanPage() {
   
   const [activeTab, setActiveTab] = useState<TabType>("profil")
   
-  // Local state for forms
   const [tempName, setTempName] = useState(companyName)
   const [tempWajib, setTempWajib] = useState(simpananWajibBulanan)
   const [tempBunga, setTempBunga] = useState(bungaPinjaman)
@@ -35,13 +33,11 @@ export default function PengaturanPage() {
   const [expenseForm, setExpenseForm] = useState({ keterangan: "", nominal: 0 })
   const [isSaved, setIsSaved] = useState(false)
 
-  // Local state for Password Form
   const [oldPassword, setOldPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
 
-  // Block non-admins
   if (user?.role !== "admin") {
     return <div className="flex h-full items-center justify-center p-10 text-slate-500">Akses ditolak. Hanya untuk Admin.</div>
   }
@@ -72,7 +68,6 @@ export default function PengaturanPage() {
     }
   }
 
-  // Fungsi khusus Ganti Password
   const handleGantiPassword = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -136,7 +131,6 @@ export default function PengaturanPage() {
         <p className="text-xs text-slate-500 mt-0.5">Konfigurasi master data, profil perusahaan, dan operasional.</p>
       </div>
 
-      {/* Tabs Menu */}
       <div className="bg-white/60 p-1 rounded-lg inline-flex flex-wrap gap-1 border border-slate-200/60 shadow-sm backdrop-blur-md">
         {(["profil", "departemen", "pengeluaran", "operasional", "keamanan"] as TabType[]).map((tab) => (
           <button
@@ -154,9 +148,8 @@ export default function PengaturanPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         <div className="col-span-1 lg:col-span-2">
-          {/* TAB: PROFIL */}
+          
           {activeTab === "profil" && (
             <Card>
               <CardHeader className="border-b border-slate-100/50 bg-slate-50/30">
@@ -214,7 +207,6 @@ export default function PengaturanPage() {
             </Card>
           )}
 
-          {/* TAB: DEPARTEMEN */}
           {activeTab === "departemen" && (
             <Card>
               <CardHeader className="border-b border-slate-100/50 bg-slate-50/30">
@@ -248,7 +240,6 @@ export default function PengaturanPage() {
             </Card>
           )}
 
-          {/* TAB: PENGELUARAN */}
           {activeTab === "pengeluaran" && (
             <Card>
               <CardHeader className="border-b border-slate-100/50 bg-slate-50/30">
@@ -286,4 +277,143 @@ export default function PengaturanPage() {
                     <div key={exp.id} className="p-4 flex justify-between items-center hover:bg-slate-50">
                       <div>
                         <p className="text-xs font-semibold text-slate-900">{exp.keterangan}</p>
-                        <p className="
+                        <p className="text-[10px] text-slate-500">{exp.tanggal} • {exp.id}</p>
+                      </div>
+                      <div className="text-xs font-bold text-rose-600">
+                        - {formatRupiah(exp.nominal)}
+                      </div>
+                    </div>
+                  ))}
+                  {expenses.length === 0 && <div className="p-8 text-center text-xs text-slate-500">Belum ada data pengeluaran.</div>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "operasional" && (
+            <Card>
+              <CardHeader className="border-b border-slate-100/50 bg-slate-50/30">
+                <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                  Proses Bulanan Massal
+                  <span className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded text-[10px]">Tindakan Berbahaya</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                
+                <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50">
+                  <h3 className="text-sm font-bold text-slate-800 mb-1">Setoran Wajib Bulanan</h3>
+                  <p className="text-xs text-slate-500 mb-4">Proses potong gaji/tambah saldo simpanan wajib untuk seluruh anggota aktif.</p>
+                  <button 
+                    onClick={() => {
+                      const currentMonth = new Date().toISOString().slice(0, 7)
+                      if (lastPostedSimpananMonth === currentMonth) {
+                        return alert("Gagal: Simpanan wajib untuk bulan ini SUDAH diproses sebelumnya!")
+                      }
+                      
+                      const activeMembersCount = members.filter(m => m.status === 'Aktif').length
+                      if (activeMembersCount === 0) return alert("Tidak ada anggota aktif.")
+                      
+                      if (confirm(`Apakah Anda yakin akan memproses simpanan wajib (Rp ${simpananWajibBulanan.toLocaleString('id-ID')}) untuk semua ${activeMembersCount} anggota aktif bulan ini?`)) {
+                        processAllSimpananWajib(simpananWajibBulanan)
+                        setLastPostedSimpananMonth(currentMonth)
+                        alert("Setoran Wajib bulan ini berhasil ditambahkan ke saldo anggota!")
+                      }
+                    }}
+                    className="w-full sm:w-auto bg-teal-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-teal-700 shadow-sm transition-all"
+                  >
+                    Proses Setoran Wajib ({formatRupiah(simpananWajibBulanan)})
+                  </button>
+                </div>
+
+                <div className="p-4 border border-slate-200 rounded-xl bg-slate-50/50">
+                  <h3 className="text-sm font-bold text-slate-800 mb-1">Cicilan Pinjaman Bulanan</h3>
+                  <p className="text-xs text-slate-500 mb-4">Proses penagihan/potong saldo cicilan pinjaman bagi anggota yang memiliki pinjaman aktif.</p>
+                  <button 
+                    onClick={() => {
+                      const currentMonth = new Date().toISOString().slice(0, 7)
+                      if (lastPostedCicilanMonth === currentMonth) {
+                        return alert("Gagal: Cicilan pinjaman untuk bulan ini SUDAH diproses sebelumnya!")
+                      }
+                      
+                      const activeLoansCount = loans.filter(l => l.status === "Approved").length
+                      if (activeLoansCount === 0) return alert("Tidak ada pinjaman aktif untuk diproses.")
+                      
+                      if (confirm(`Apakah Anda yakin akan memotong saldo / menagih cicilan pinjaman untuk ${activeLoansCount} anggota yang memiliki pinjaman aktif bulan ini?`)) {
+                        processAllInstallments()
+                        setLastPostedCicilanMonth(currentMonth)
+                        alert("Semua cicilan pinjaman bulan ini berhasil diproses!")
+                      }
+                    }}
+                    className="w-full sm:w-auto bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 shadow-sm transition-all"
+                  >
+                    Proses Cicilan Pinjaman
+                  </button>
+                </div>
+
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "keamanan" && (
+            <Card>
+              <CardHeader className="border-b border-slate-100/50 bg-slate-50/30">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <KeyRound size={16} className="text-slate-700" />
+                  Keamanan Akun
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <form onSubmit={handleGantiPassword} className="space-y-4 max-w-sm">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Password Lama</label>
+                    <input
+                      type="password"
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Password Baru</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      minLength={6}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Konfirmasi Password Baru</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      minLength={6}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isPasswordLoading}
+                      className="bg-slate-900 text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {isPasswordLoading ? "Menyimpan..." : "Simpan Password Baru"}
+                    </button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
