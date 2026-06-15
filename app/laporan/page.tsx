@@ -72,6 +72,9 @@ export default function LaporanPage() {
     return a + (l.nominal * (bungaPinjaman / 100))
   }, 0)
 
+  const jasaPengurus = totalPendapatanBungaBulanIni * 0.05
+  const shuBersih = totalPendapatanBungaBulanIni * 0.95
+
   // ----------------------------------------------------
   // DATA 4: LAPORAN KEUANGAN (ARUS KAS)
   // ----------------------------------------------------
@@ -91,7 +94,16 @@ export default function LaporanPage() {
   }, {} as Record<number, number>)
 
   const totalSisaSaldoAwal = saldoBantuan
-  const totalPemasukan = pemasukanIuranWajib + totalPemasukanPokok + totalPendapatanBungaBulanIni + totalSisaSaldoAwal
+  
+  const pemasukanPelunasanPinjaman = transactions
+    .filter(t => t.tipe === "PELUNASAN_PINJAMAN")
+    .map(t => ({
+      nama: t.keterangan.replace("Pelunasan Konpensasi ", "").replace("Pelunasan Dipercepat ", ""),
+      nominal: t.nominal
+    }))
+  const totalPemasukanPelunasan = pemasukanPelunasanPinjaman.reduce((a, b) => a + b.nominal, 0)
+
+  const totalPemasukan = pemasukanIuranWajib + totalPemasukanPokok + totalPendapatanBungaBulanIni + totalPemasukanPelunasan + totalSisaSaldoAwal
 
   // Pengeluaran (Pinjaman dicairkan) - Only real disbursements, not migrated loans
   const pengeluaranPinjaman = transactions
@@ -153,7 +165,8 @@ export default function LaporanPage() {
     // 3. Sheet Rugi Laba
     const ws3Data = [
       { "Bulan": currentMonthStr, "Pendapatan Bunga Pinjaman": totalPendapatanBungaBulanIni },
-      { "Bulan": "Jumlah", "Pendapatan Bunga Pinjaman": totalPendapatanBungaBulanIni }
+      { "Bulan": "Dikurangi: Jasa Pengurus (5%)", "Pendapatan Bunga Pinjaman": -jasaPengurus },
+      { "Bulan": "SHU Bersih Koperasi (95%)", "Pendapatan Bunga Pinjaman": shuBersih }
     ]
     const ws3 = XLSX.utils.json_to_sheet(ws3Data)
     XLSX.utils.book_append_sheet(wb, ws3, "Rugi Laba")
@@ -234,7 +247,8 @@ export default function LaporanPage() {
           head: [['Bulan', 'Pendapatan Bunga Pinjaman']],
           body: [
             [currentMonthStr, formatRupiah(totalPendapatanBungaBulanIni)],
-            ['Jumlah', formatRupiah(totalPendapatanBungaBulanIni)]
+            ['Dikurangi: Jasa Pengurus (5%)', `-${formatRupiah(jasaPengurus)}`],
+            ['SHU Bersih Koperasi (95%)', formatRupiah(shuBersih)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225] },
@@ -260,6 +274,13 @@ export default function LaporanPage() {
         Object.entries(groupedBunga).forEach(([bungaRate, total]) => {
           bodyData.push(['', `Bunga ${bungaRate}`, formatRupiah(total)])
         })
+
+        if (totalPemasukanPelunasan > 0) {
+          bodyData.push(['', { content: '3.5 PELUNASAN KONPENSASI', colSpan: 2, styles: { fontStyle: 'bold', textColor: [29, 78, 216] } }])
+          pemasukanPelunasanPinjaman.forEach((p, i) => {
+            bodyData.push(['', `${p.nama}`, formatRupiah(p.nominal)])
+          })
+        }
         
         bodyData.push(['', `4 Sisa Saldo Bulan Lalu`, formatRupiah(totalSisaSaldoAwal)])
         bodyData.push(['', { content: 'Total Pemasukan', styles: { fontStyle: 'bold' } }, { content: formatRupiah(totalPemasukan), styles: { fontStyle: 'bold' } }])
@@ -457,9 +478,13 @@ export default function LaporanPage() {
                     <td className="px-6 py-3 border-r border-slate-200 font-medium">{currentMonthStr}</td>
                     <td className="px-6 py-3 text-emerald-600 font-semibold">{formatRupiah(totalPendapatanBungaBulanIni)}</td>
                   </tr>
-                  <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800">
-                    <td className="px-6 py-3 border-r border-slate-300">Jumlah</td>
-                    <td className="px-6 py-3 text-emerald-700">{formatRupiah(totalPendapatanBungaBulanIni)}</td>
+                  <tr className="border-b border-slate-100 bg-amber-50/30">
+                    <td className="px-6 py-3 border-r border-slate-200 font-medium text-amber-700">Dikurangi: Jasa Pengurus (5%)</td>
+                    <td className="px-6 py-3 text-amber-600 font-semibold">-{formatRupiah(jasaPengurus)}</td>
+                  </tr>
+                  <tr className="bg-emerald-50/50 border-t-2 border-slate-300 font-bold text-slate-800">
+                    <td className="px-6 py-3 border-r border-slate-300">SHU Bersih Koperasi (95%)</td>
+                    <td className="px-6 py-3 text-emerald-700">{formatRupiah(shuBersih)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -529,6 +554,24 @@ export default function LaporanPage() {
                       )}
                     </div>
                   </div>
+
+                  {/* Pelunasan Pinjaman */}
+                  {pemasukanPelunasanPinjaman.length > 0 && (
+                    <div className="pt-2">
+                      <div className="flex items-center gap-3 px-3 mb-2">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs shadow-inner border border-blue-200/50">3.5</span>
+                        <span className="font-bold text-blue-700">Pelunasan Pinjaman <span className="text-[10px] font-normal text-blue-600/70 ml-1">(Konpensasi)</span></span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 pl-12 pr-3">
+                        {pemasukanPelunasanPinjaman.map((p, i) => (
+                          <div key={i} className="flex justify-between items-center py-1 border-b border-dashed border-slate-200 text-slate-600 text-xs">
+                            <span className="font-medium">{p.nama}</span>
+                            <span className="font-semibold text-blue-600">{formatRupiah(p.nominal)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Saldo Bulan Lalu */}
                   <div className="flex items-center justify-between px-3 py-2 bg-slate-50/80 border border-slate-200 rounded-lg mt-3 shadow-sm">

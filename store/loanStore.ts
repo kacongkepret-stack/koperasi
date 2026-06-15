@@ -8,7 +8,7 @@ export type Loan = {
   member_id: string
   nama: string // We might not have this in DB directly, but let's assume we join or just store it for simplicity in frontend
   nominal: number
-  status: "Pending" | "Approved" | "Rejected"
+  status: "Pending" | "Approved" | "Rejected" | "Lunas"
   tenor: number
   cicilan_ke: number
   created_at?: string
@@ -25,7 +25,8 @@ interface LoanState {
   totalPayment: () => number
   addLoan: (member_id: string, nama: string, nominal: number) => Promise<void>
   addMigratedLoan: (member_id: string, nama: string, nominal: number, cicilan_ke: number) => Promise<void>
-  updateLoanStatus: (id: string, status: "Approved" | "Rejected") => Promise<void>
+  updateLoanStatus: (id: string, status: "Approved" | "Rejected" | "Lunas") => Promise<void>
+  approveWithKonpensasi: (newLoanId: string, oldLoanId: string, pelunasanAmount: number) => Promise<void>
   processAllInstallments: () => Promise<void>
 }
 
@@ -112,6 +113,55 @@ export const useLoanStore = create<LoanState>((set, get) => ({
       console.error("Error updating loan status:", error)
       alert("Gagal merubah status pinjaman.")
     }
+  },
+  approveWithKonpensasi: async (newLoanId, oldLoanId, pelunasanAmount) => {
+    const state = get()
+    
+    // 1. Mark old loan as Lunas
+    const { error: err1 } = await supabase.from('loans').update({ status: 'Lunas' }).eq('id', oldLoanId)
+    if (err1) {
+      console.error("Error closing old loan:", err1)
+      alert("Gagal menutup pinjaman lama.")
+      return
+    }
+
+    // Log PELUNASAN_PINJAMAN
+    const oldLoan = state.loans.find(l => l.id === oldLoanId)
+    if (oldLoan) {
+      await useTransactionStore.getState().addTransaction({
+        member_id: oldLoan.member_id,
+        tipe: "PELUNASAN_PINJAMAN",
+        nominal: pelunasanAmount,
+        keterangan: `Pelunasan Konpensasi ${oldLoan.nama}`
+      })
+    }
+
+    // 2. Mark new loan as Approved
+    const { error: err2 } = await supabase.from('loans').update({ status: 'Approved' }).eq('id', newLoanId)
+    if (err2) {
+      console.error("Error approving new loan:", err2)
+      alert("Gagal menyetujui pinjaman baru.")
+      return
+    }
+
+    // Log PENCAIRAN_PINJAMAN
+    const newLoan = state.loans.find(l => l.id === newLoanId)
+    if (newLoan) {
+      await useTransactionStore.getState().addTransaction({
+        member_id: newLoan.member_id,
+        tipe: "PENCAIRAN_PINJAMAN",
+        nominal: newLoan.nominal,
+        keterangan: `Pencairan Dana ${newLoan.nama}`
+      })
+    }
+
+    // 3. Update local state
+    const newLoans = state.loans.map(loan => {
+      if (loan.id === oldLoanId) return { ...loan, status: "Lunas" as const }
+      if (loan.id === newLoanId) return { ...loan, status: "Approved" as const }
+      return loan
+    })
+    set({ loans: newLoans })
   },
   processAllInstallments: async () => {
     const state = get()

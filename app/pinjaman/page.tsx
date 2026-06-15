@@ -6,7 +6,9 @@ import { useAuthStore } from "@/store/authStore"
 import { useMemberStore } from "@/store/memberStore"
 import { formatRupiah, cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, X, Search } from "lucide-react"
+import { Plus, X, Search, FileText } from "lucide-react"
+import { useSettingsStore } from "@/store/settingsStore"
+import jsPDF from "jspdf"
 
 export default function PinjamanPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -17,8 +19,11 @@ export default function PinjamanPage() {
   // Migration mode states
   const [isMigrationMode, setIsMigrationMode] = useState(false)
   const [migratedcicilan_ke, setMigratedcicilan_ke] = useState(0)
+  
+  const [konpensasiDialog, setKonpensasiDialog] = useState<{ isOpen: boolean, newLoan: any, oldLoan: any } | null>(null)
+  const { bungaPinjaman, companyName, companyLogo } = useSettingsStore()
 
-  const { amount, tenure, setAmount, setTenure, monthlyInstallment, totalPayment, loans, addLoan, addMigratedLoan, updateLoanStatus } = useLoanStore()
+  const { amount, tenure, setAmount, setTenure, monthlyInstallment, totalPayment, loans, addLoan, addMigratedLoan, updateLoanStatus, approveWithKonpensasi } = useLoanStore()
   const { user } = useAuthStore()
   const { members } = useMemberStore()
   const [searchTerm, setSearchTerm] = useState("")
@@ -79,6 +84,80 @@ export default function PinjamanPage() {
   const handlePaymentSubmit = () => {
     alert(`Pembayaran cicilan sebesar ${formatRupiah(paymentAmount)} berhasil dicatat untuk ${selectedLoan?.nama}!`)
     setIsPaymentModalOpen(false)
+  }
+
+  const handleApproveClick = (loan: any) => {
+    const oldLoan = loans.find(l => l.member_id === loan.member_id && l.status === "Approved")
+    if (oldLoan) {
+      setKonpensasiDialog({ isOpen: true, newLoan: loan, oldLoan })
+    } else {
+      updateLoanStatus(loan.id, "Approved")
+    }
+  }
+
+  const executeKonpensasi = async () => {
+    if (!konpensasiDialog) return
+    const { newLoan, oldLoan } = konpensasiDialog
+    
+    const pokokPerBulan = oldLoan.nominal / oldLoan.tenor
+    const bungaPerBulan = oldLoan.nominal * (bungaPinjaman / 100)
+    const angsuranPerBulan = pokokPerBulan + bungaPerBulan
+    const sisaBulan = oldLoan.tenor - oldLoan.cicilan_ke
+    const pelunasanAmount = angsuranPerBulan * sisaBulan
+    const pencairanBersih = newLoan.nominal - pelunasanAmount
+
+    await approveWithKonpensasi(newLoan.id, oldLoan.id, pelunasanAmount)
+    printBuktiPencairan(newLoan, oldLoan, pelunasanAmount, pencairanBersih)
+    setKonpensasiDialog(null)
+  }
+
+  const printBuktiPencairan = (newLoan: any, oldLoan: any, pelunasanAmount: number, pencairanBersih: number) => {
+    const doc = new jsPDF({ format: 'a5' })
+    
+    doc.setFontSize(14)
+    doc.setFont("helvetica", "bold")
+    doc.text(companyName || "Koperasi Karyawan", 14, 15)
+    doc.setFontSize(10)
+    doc.text("BUKTI PENCAIRAN PINJAMAN (KONPENSASI)", 14, 22)
+    doc.setFont("helvetica", "normal")
+    doc.line(14, 25, 134, 25)
+    
+    doc.setFontSize(9)
+    doc.text(`Tanggal: ${new Date().toLocaleDateString("id-ID")}`, 14, 32)
+    doc.text(`Nama Anggota: ${newLoan.nama}`, 14, 38)
+    
+    doc.setFont("helvetica", "bold")
+    doc.text("Rincian Pencairan:", 14, 48)
+    doc.setFont("helvetica", "normal")
+    doc.text(`Nominal Pinjaman Baru:`, 14, 54)
+    doc.text(formatRupiah(newLoan.nominal), 134, 54, { align: "right" })
+    
+    doc.text(`Pelunasan Pinjaman Lama:`, 14, 60)
+    doc.text(`- ${formatRupiah(pelunasanAmount)}`, 134, 60, { align: "right" })
+    
+    doc.setFontSize(8)
+    doc.setTextColor(100)
+    doc.text(`(Sisa ${oldLoan.tenor - oldLoan.cicilan_ke}x angsuran dari ID: ${oldLoan.id.slice(0,8)})`, 14, 65)
+    doc.setTextColor(0)
+    
+    doc.line(14, 70, 134, 70)
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.text("Dana Bersih Diterima Tunai:", 14, 76)
+    doc.text(formatRupiah(pencairanBersih), 134, 76, { align: "right" })
+    
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(9)
+    doc.text("Tanda Terima,", 14, 100)
+    doc.text("(..........................)", 14, 120)
+    doc.text(newLoan.nama, 14, 125)
+    
+    doc.text("Disetujui Oleh,", 90, 100)
+    doc.text("(..........................)", 90, 120)
+    doc.text("Pengurus Koperasi", 90, 125)
+    
+    doc.autoPrint()
+    window.open(doc.output('bloburl'), '_blank')
   }
 
   return (
@@ -176,7 +255,7 @@ export default function PinjamanPage() {
                     {loan.status === "Pending" && user?.role === "admin" && (
                       <>
                         <button 
-                          onClick={() => updateLoanStatus(loan.id, "Approved")}
+                          onClick={() => handleApproveClick(loan)}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[10px] px-2 py-1 rounded transition-colors"
                         >
                           Setujui
@@ -393,6 +472,70 @@ export default function PinjamanPage() {
           </div>
         </div>
       )}
+      
+      {/* Konpensasi Dialog */}
+      {konpensasiDialog && konpensasiDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50/50">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Konfirmasi Konpensasi Utang</h2>
+                <p className="text-[10px] text-slate-500">Anggota ini memiliki pinjaman aktif</p>
+              </div>
+              <button 
+                onClick={() => setKonpensasiDialog(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-100"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Pinjaman Baru:</span>
+                  <span className="font-semibold text-slate-900">{formatRupiah(konpensasiDialog.newLoan.nominal)}</span>
+                </div>
+                <div className="flex justify-between text-rose-600">
+                  <span>Pelunasan Lama (Sisa {konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke}x):</span>
+                  <span className="font-semibold">
+                    -{formatRupiah(
+                      ((konpensasiDialog.oldLoan.nominal / konpensasiDialog.oldLoan.tenor) + 
+                      (konpensasiDialog.oldLoan.nominal * (bungaPinjaman/100))) * 
+                      (konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke)
+                    )}
+                  </span>
+                </div>
+                <div className="h-px bg-slate-200 my-1"></div>
+                <div className="flex justify-between font-bold text-emerald-700">
+                  <span>Pencairan Bersih (Tunai):</span>
+                  <span>
+                    {formatRupiah(
+                      konpensasiDialog.newLoan.nominal - 
+                      (((konpensasiDialog.oldLoan.nominal / konpensasiDialog.oldLoan.tenor) + 
+                      (konpensasiDialog.oldLoan.nominal * (bungaPinjaman/100))) * 
+                      (konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke))
+                    )}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[10.5px] text-slate-500 leading-relaxed">
+                Menyetujui akan otomatis melunaskan pinjaman lama dan mencetak bukti pencairan konpensasi.
+              </p>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+              <button onClick={() => setKonpensasiDialog(null)} className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                Batal
+              </button>
+              <button onClick={executeKonpensasi} className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm flex items-center gap-1.5">
+                <FileText size={14} /> Setujui & Print Bukti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
