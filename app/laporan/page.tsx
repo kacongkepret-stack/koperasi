@@ -162,7 +162,8 @@ export default function LaporanPage() {
       "SALDO WAJIB": m.saldo_wajib,
       "SALDO SHU": m.saldo_shu || 0,
       "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0),
-      "ESTIMASI SHU": totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0
+      "ESTIMASI SHU": totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0,
+      "TOTAL ASET": (m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)
     }))
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "Total", 
@@ -170,7 +171,8 @@ export default function LaporanPage() {
       "SALDO WAJIB": totalSaldoWajib,
       "SALDO SHU": totalSaldoSHU,
       "TOTAL TABUNGAN": totalSaldoKeseluruhan,
-      "ESTIMASI SHU": shuBersih
+      "ESTIMASI SHU": shuBersih,
+      "TOTAL ASET": totalSaldoKeseluruhan + shuBersih
     } as any)
     const ws2 = XLSX.utils.json_to_sheet(ws2Data)
     XLSX.utils.book_append_sheet(wb, ws2, "Data Tabungan")
@@ -242,12 +244,16 @@ export default function LaporanPage() {
         doc.text(`DATA TABUNGAN - PERIODE ${new Date().getFullYear()}`, 14, 34)
         autoTable(doc, {
           startY: 42,
-          head: [['NO', 'NAMA', 'DEPT', 'POKOK', 'WAJIB', 'SHU', 'TOTAL', 'EST. SHU']],
+          head: [['NO', 'NAMA', 'DEPT', 'POKOK', 'WAJIB', 'SHU', 'TOTAL', 'EST. SHU', 'TOTAL ASET']],
           body: [
-            ...members.map((m, i) => [
-              i+1, m.nama, m.departemen || "-", formatRupiah(m.saldo_pokok), formatRupiah(m.saldo_wajib), formatRupiah(m.saldo_shu || 0), formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)), formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)
-            ]),
-            ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoSHU), formatRupiah(totalSaldoKeseluruhan), formatRupiah(shuBersih)]
+            ...members.map((m, i) => {
+              const estimasiSHU = totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0;
+              const totalTabungan = m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0);
+              return [
+                i+1, m.nama, m.departemen || "-", formatRupiah(m.saldo_pokok), formatRupiah(m.saldo_wajib), formatRupiah(m.saldo_shu || 0), formatRupiah(totalTabungan), formatRupiah(estimasiSHU), formatRupiah(totalTabungan + estimasiSHU)
+              ]
+            }),
+            ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoSHU), formatRupiah(totalSaldoKeseluruhan), formatRupiah(shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225] },
@@ -484,7 +490,8 @@ export default function LaporanPage() {
                     <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO WAJIB</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO SHU</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">TOTAL TABUNGAN</th>
-                    <th className="px-4 py-3 text-right">ESTIMASI SHU</th>
+                    <th className="px-4 py-3 border-r border-slate-200 text-right">ESTIMASI SHU</th>
+                    <th className="px-4 py-3 text-right">TOTAL ASET</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
@@ -497,7 +504,8 @@ export default function LaporanPage() {
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_wajib)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_shu || 0)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
-                      <td className="px-4 py-3 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
+                      <td className="px-4 py-3 border-r border-slate-200 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0))}</td>
                     </tr>
                   ))}
                   {members.length > 0 && (
@@ -507,7 +515,8 @@ export default function LaporanPage() {
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoWajib)}</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right text-emerald-700">{formatRupiah(totalSaldoKeseluruhan)}</td>
-                      <td className="px-4 py-3 text-right text-blue-700 bg-blue-50/50">{formatRupiah(shuBersih)}</td>
+                      <td className="px-4 py-3 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50">{formatRupiah(shuBersih)}</td>
+                      <td className="px-4 py-3 text-right text-emerald-800 bg-emerald-100/50">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
                     </tr>
                   )}
                 </tbody>
