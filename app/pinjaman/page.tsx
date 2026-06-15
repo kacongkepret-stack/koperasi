@@ -220,8 +220,8 @@ export default function PinjamanPage() {
       {/* Premium Dialog/Modal implementation */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">Ajukan Pinjaman Baru</h2>
                 <p className="text-[11px] text-slate-500 mt-0.5">Kalkulasi cicilan secara realtime</p>
@@ -234,7 +234,7 @@ export default function PinjamanPage() {
               </button>
             </div>
             
-            <div className="p-5 space-y-6">
+            <div className="p-5 space-y-6 overflow-y-auto">
               
               {user?.role === "admin" && (
                 <div className="space-y-4">
@@ -336,7 +336,7 @@ export default function PinjamanPage() {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2 shrink-0">
               <button 
                 onClick={() => setIsModalOpen(false)}
                 className="px-4 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-200 transition-colors"
@@ -356,8 +356,8 @@ export default function PinjamanPage() {
       {/* Payment Dialog */}
       {isPaymentModalOpen && selectedLoan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">Catat Cicilan</h2>
                 <p className="text-[10px] text-slate-500">{selectedLoan.nama} ({selectedLoan.id})</p>
@@ -370,7 +370,7 @@ export default function PinjamanPage() {
               </button>
             </div>
             
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-semibold text-slate-700 uppercase">Nominal Bayar (Custom)</label>
                 <input 
@@ -382,7 +382,7 @@ export default function PinjamanPage() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2 shrink-0">
               <button onClick={() => setIsPaymentModalOpen(false)} className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-200">
                 Batal
               </button>
