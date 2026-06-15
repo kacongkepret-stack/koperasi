@@ -154,24 +154,25 @@ export default function LaporanPage() {
     XLSX.utils.book_append_sheet(wb, ws1, "Daftar Peminjam")
 
     // 2. Sheet Data Tabungan
-    const ws2Data = members.map((m, i) => ({
-      "NO": i + 1,
-      "NAMA": m.nama,
-      "DEPT": m.departemen,
-      "SALDO POKOK": m.saldo_pokok,
-      "SALDO WAJIB": m.saldo_wajib,
-      "SALDO SHU": m.saldo_shu || 0,
-      "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0),
-      "ESTIMASI SHU": totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0,
-      "TOTAL ASET": (m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)
-    }))
+    const ws2Data = members.map((m, i) => {
+      const estimasiSHU = totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0;
+      return {
+        "NO": i + 1,
+        "NAMA": m.nama,
+        "DEPT": m.departemen,
+        "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0),
+        "SHU LAMA": m.saldo_shu || 0,
+        "EST. SHU BARU": estimasiSHU,
+        "TOTAL SHU": (m.saldo_shu || 0) + estimasiSHU,
+        "TOTAL ASET": (m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + estimasiSHU
+      }
+    })
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "Total", 
-      "SALDO POKOK": totalSaldoPokok,
-      "SALDO WAJIB": totalSaldoWajib,
-      "SALDO SHU": totalSaldoSHU,
       "TOTAL TABUNGAN": totalSaldoKeseluruhan,
-      "ESTIMASI SHU": shuBersih,
+      "SHU LAMA": totalSaldoSHU,
+      "EST. SHU BARU": shuBersih,
+      "TOTAL SHU": totalSaldoSHU + shuBersih,
       "TOTAL ASET": totalSaldoKeseluruhan + shuBersih
     } as any)
     const ws2 = XLSX.utils.json_to_sheet(ws2Data)
@@ -244,16 +245,16 @@ export default function LaporanPage() {
         doc.text(`DATA TABUNGAN - PERIODE ${new Date().getFullYear()}`, 14, 34)
         autoTable(doc, {
           startY: 42,
-          head: [['NO', 'NAMA', 'DEPT', 'POKOK', 'WAJIB', 'SHU', 'TOTAL', 'EST. SHU', 'TOTAL ASET']],
+          head: [['NO', 'NAMA', 'DEPT', 'TABUNGAN', 'SHU LAMA', 'EST. SHU', 'TOTAL SHU', 'TOTAL ASET']],
           body: [
             ...members.map((m, i) => {
               const estimasiSHU = totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0;
               const totalTabungan = m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0);
               return [
-                i+1, m.nama, m.departemen || "-", formatRupiah(m.saldo_pokok), formatRupiah(m.saldo_wajib), formatRupiah(m.saldo_shu || 0), formatRupiah(totalTabungan), formatRupiah(estimasiSHU), formatRupiah(totalTabungan + estimasiSHU)
+                i+1, m.nama, m.departemen || "-", formatRupiah(totalTabungan), formatRupiah(m.saldo_shu || 0), formatRupiah(estimasiSHU), formatRupiah((m.saldo_shu || 0) + estimasiSHU), formatRupiah(totalTabungan + estimasiSHU)
               ]
             }),
-            ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoSHU), formatRupiah(totalSaldoKeseluruhan), formatRupiah(shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)]
+            ['', '', 'TOTAL', formatRupiah(totalSaldoKeseluruhan), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225], fontSize: 8 },
@@ -487,11 +488,10 @@ export default function LaporanPage() {
                     <th className="px-3 py-2 border-r border-slate-200 text-center">NO</th>
                     <th className="px-3 py-2 border-r border-slate-200">NAMA</th>
                     <th className="px-3 py-2 border-r border-slate-200">DEPT</th>
-                    <th className="px-3 py-2 border-r border-slate-200 text-right">SALDO POKOK</th>
-                    <th className="px-3 py-2 border-r border-slate-200 text-right">SALDO WAJIB</th>
-                    <th className="px-3 py-2 border-r border-slate-200 text-right">SALDO SHU</th>
                     <th className="px-3 py-2 border-r border-slate-200 text-right">TOTAL TABUNGAN</th>
-                    <th className="px-3 py-2 border-r border-slate-200 text-right">ESTIMASI SHU</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">SHU LAMA</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">EST. SHU BARU</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">TOTAL SHU</th>
                     <th className="px-3 py-2 text-right">TOTAL ASET</th>
                   </tr>
                 </thead>
@@ -501,23 +501,21 @@ export default function LaporanPage() {
                       <td className="px-3 py-2.5 border-r border-slate-200 text-center font-medium">{i + 1}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200">{m.nama}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200">{m.departemen || "-"}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_wajib)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_shu || 0)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-medium text-blue-600">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-bold text-blue-700 bg-blue-50/30">{formatRupiah((m.saldo_shu || 0) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0))}</td>
                       <td className="px-3 py-2.5 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0))}</td>
                     </tr>
                   ))}
                   {members.length > 0 && (
                     <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800">
                       <td colSpan={3} className="px-3 py-2.5 border-r border-slate-300 text-center">Total</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoPokok)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoWajib)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoKeseluruhan)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-emerald-700">{formatRupiah(totalSaldoKeseluruhan)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50">{formatRupiah(shuBersih)}</td>
-                      <td className="px-3 py-2.5 text-right text-emerald-800 bg-emerald-100/50">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-600 font-medium">{formatRupiah(shuBersih)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50 font-bold">{formatRupiah(totalSaldoSHU + shuBersih)}</td>
+                      <td className="px-3 py-2.5 text-right text-emerald-800 bg-emerald-100/50 font-bold">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
                     </tr>
                   )}
                 </tbody>

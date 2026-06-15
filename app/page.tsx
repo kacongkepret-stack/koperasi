@@ -241,13 +241,13 @@ function MemberDashboard() {
             <div className="text-3xl font-bold text-slate-900 tracking-tight">{formatRupiah(myTotalTabungan)}</div>
             <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100 text-xs">
               <div>
-                <span className="text-slate-500 block mb-0.5">Simpanan Pokok</span>
-                <span className="font-semibold text-slate-900">{formatRupiah(myMemberData?.saldo_pokok || 0)}</span>
+                <span className="text-slate-500 block mb-0.5">SHU Lama</span>
+                <span className="font-semibold text-slate-900">{formatRupiah(myMemberData?.saldo_shu || 0)}</span>
               </div>
               <div className="w-px h-6 bg-slate-200"></div>
               <div>
-                <span className="text-slate-500 block mb-0.5">Simpanan Wajib</span>
-                <span className="font-semibold text-slate-900">{formatRupiah(myMemberData?.saldo_wajib || 0)}</span>
+                <span className="text-slate-500 block mb-0.5">Total SHU (Lama+Baru)</span>
+                <span className="font-bold text-blue-600">{formatRupiah((myMemberData?.saldo_shu || 0) + myEstimasiSHU)}</span>
               </div>
               <div className="w-px h-6 bg-slate-200"></div>
               <div>
