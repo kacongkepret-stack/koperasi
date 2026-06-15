@@ -201,9 +201,20 @@ export const useLoanStore = create<LoanState>((set, get) => ({
   },
   deleteLoan: async (id) => {
     const state = get()
+    const loanToDelete = state.loans.find(l => l.id === id)
+    
     const { error } = await supabase.from('loans').delete().eq('id', id)
     if (!error) {
       set({ loans: state.loans.filter(l => l.id !== id) })
+      
+      // Auto-delete the orphaned Pencairan Dana transaction if it exists
+      if (loanToDelete) {
+        await supabase.from('transactions')
+          .delete()
+          .eq('member_id', loanToDelete.member_id)
+          .eq('tipe', 'PENCAIRAN_PINJAMAN')
+          .eq('nominal', loanToDelete.nominal)
+      }
     } else {
       console.error("Error deleting loan:", error)
       alert("Gagal menghapus pinjaman.")
