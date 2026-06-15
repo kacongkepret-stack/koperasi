@@ -95,6 +95,19 @@ export const useLoanStore = create<LoanState>((set, get) => ({
     if (!error) {
       const newLoans = state.loans.map(loan => loan.id === id ? { ...loan, status } : loan)
       set({ loans: newLoans })
+
+      // Log pencairan dana
+      if (status === "Approved") {
+        const loan = state.loans.find(l => l.id === id)
+        if (loan) {
+          await useTransactionStore.getState().addTransaction({
+            member_id: loan.member_id,
+            tipe: "PENCAIRAN_PINJAMAN",
+            nominal: loan.nominal,
+            keterangan: `Pencairan Dana ${loan.nama}`
+          })
+        }
+      }
     } else {
       console.error("Error updating loan status:", error)
       alert("Gagal merubah status pinjaman.")

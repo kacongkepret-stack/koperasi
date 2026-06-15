@@ -10,6 +10,7 @@ import autoTable from "jspdf-autotable"
 import { useMemberStore } from "@/store/memberStore"
 import { useLoanStore } from "@/store/loanStore"
 import { useSettingsStore } from "@/store/settingsStore"
+import { useTransactionStore } from "@/store/transactionStore"
 
 export default function LaporanPage() {
   const [showToast, setShowToast] = useState(false)
@@ -19,6 +20,7 @@ export default function LaporanPage() {
   
   const { members } = useMemberStore()
   const { loans } = useLoanStore()
+  const { transactions } = useTransactionStore()
   const { simpananWajibBulanan, bungaPinjaman, companyName, companyLogo, saldoBantuan } = useSettingsStore()
 
   const activeLoans = loans.filter(l => l.status === "Approved")
@@ -89,11 +91,13 @@ export default function LaporanPage() {
   const totalSisaSaldoAwal = saldoBantuan
   const totalPemasukan = pemasukanIuranWajib + totalPemasukanPokok + totalPendapatanBungaBulanIni + totalSisaSaldoAwal
 
-  // Pengeluaran (Pinjaman dicairkan)
-  const pengeluaranPinjaman = activeLoans.map(l => ({
-    nama: l.nama,
-    nominal: l.nominal
-  }))
+  // Pengeluaran (Pinjaman dicairkan) - Only real disbursements, not migrated loans
+  const pengeluaranPinjaman = transactions
+    .filter(t => t.tipe === "PENCAIRAN_PINJAMAN")
+    .map(t => ({
+      nama: t.keterangan.replace("Pencairan Dana ", ""),
+      nominal: t.nominal
+    }))
   const totalPengeluaran = pengeluaranPinjaman.reduce((a, b) => a + b.nominal, 0)
   
   const saldoAkhir = totalPemasukan - totalPengeluaran
