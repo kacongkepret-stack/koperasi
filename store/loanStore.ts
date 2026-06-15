@@ -128,6 +128,11 @@ export const useLoanStore = create<LoanState>((set, get) => ({
       keterangan: `Proses Massal Cicilan Pinjaman - Bulan ${new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`
     })
 
-    // In a real app we would call an RPC to increment cicilan_ke for all active loans.
+    // Update cicilan_ke in Supabase for each active loan
+    await Promise.all(
+      activeLoans.map(l => 
+        supabase.from('loans').update({ cicilan_ke: l.cicilan_ke + 1 }).eq('id', l.id)
+      )
+    )
   }
 }))
