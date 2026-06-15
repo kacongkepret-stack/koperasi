@@ -256,8 +256,9 @@ export default function LaporanPage() {
             ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoSHU), formatRupiah(totalSaldoKeseluruhan), formatRupiah(shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)]
           ],
           theme: 'grid',
-          headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225] },
-          bodyStyles: { lineWidth: 0.1, lineColor: [203, 213, 225] },
+          headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225], fontSize: 8 },
+          bodyStyles: { lineWidth: 0.1, lineColor: [203, 213, 225], fontSize: 8 },
+          styles: { cellPadding: 2, overflow: 'linebreak' }
         })
         doc.save("Data_Tabungan.pdf")
       }
@@ -480,43 +481,43 @@ export default function LaporanPage() {
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-sm text-left border-collapse">
-                <thead className="bg-slate-50 text-slate-700 text-xs font-bold border-b border-slate-200">
+              <table className="w-full text-[11px] text-left border-collapse">
+                <thead className="bg-slate-50 text-slate-700 text-[10px] font-bold border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 border-r border-slate-200 text-center">NO</th>
-                    <th className="px-4 py-3 border-r border-slate-200">NAMA</th>
-                    <th className="px-4 py-3 border-r border-slate-200">DEPT</th>
-                    <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO POKOK</th>
-                    <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO WAJIB</th>
-                    <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO SHU</th>
-                    <th className="px-4 py-3 border-r border-slate-200 text-right">TOTAL TABUNGAN</th>
-                    <th className="px-4 py-3 border-r border-slate-200 text-right">ESTIMASI SHU</th>
-                    <th className="px-4 py-3 text-right">TOTAL ASET</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-center">NO</th>
+                    <th className="px-3 py-2 border-r border-slate-200">NAMA</th>
+                    <th className="px-3 py-2 border-r border-slate-200">DEPT</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">SALDO POKOK</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">SALDO WAJIB</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">SALDO SHU</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">TOTAL TABUNGAN</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">ESTIMASI SHU</th>
+                    <th className="px-3 py-2 text-right">TOTAL ASET</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
                   {members.map((m, i) => (
                     <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-3 border-r border-slate-200 text-center font-medium">{i + 1}</td>
-                      <td className="px-4 py-3 border-r border-slate-200">{m.nama}</td>
-                      <td className="px-4 py-3 border-r border-slate-200">{m.departemen || "-"}</td>
-                      <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok)}</td>
-                      <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_wajib)}</td>
-                      <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_shu || 0)}</td>
-                      <td className="px-4 py-3 border-r border-slate-200 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
-                      <td className="px-4 py-3 border-r border-slate-200 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0))}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-center font-medium">{i + 1}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200">{m.nama}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200">{m.departemen || "-"}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_wajib)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_shu || 0)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
+                      <td className="px-3 py-2.5 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0))}</td>
                     </tr>
                   ))}
                   {members.length > 0 && (
                     <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800">
-                      <td colSpan={3} className="px-4 py-3 border-r border-slate-300 text-center">Total</td>
-                      <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoPokok)}</td>
-                      <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoWajib)}</td>
-                      <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
-                      <td className="px-4 py-3 border-r border-slate-300 text-right text-emerald-700">{formatRupiah(totalSaldoKeseluruhan)}</td>
-                      <td className="px-4 py-3 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50">{formatRupiah(shuBersih)}</td>
-                      <td className="px-4 py-3 text-right text-emerald-800 bg-emerald-100/50">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
+                      <td colSpan={3} className="px-3 py-2.5 border-r border-slate-300 text-center">Total</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoPokok)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoWajib)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-emerald-700">{formatRupiah(totalSaldoKeseluruhan)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50">{formatRupiah(shuBersih)}</td>
+                      <td className="px-3 py-2.5 text-right text-emerald-800 bg-emerald-100/50">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
                     </tr>
                   )}
                 </tbody>
