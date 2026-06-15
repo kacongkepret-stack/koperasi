@@ -26,7 +26,7 @@ interface LoanState {
   addLoan: (member_id: string, nama: string, nominal: number) => Promise<void>
   addMigratedLoan: (member_id: string, nama: string, nominal: number, cicilan_ke: number) => Promise<void>
   updateLoanStatus: (id: string, status: "Approved" | "Rejected" | "Lunas") => Promise<void>
-  approveWithKonpensasi: (newLoanId: string, oldLoanId: string, sisaPokok: number, bungaPelunasan: number) => Promise<void>
+  approveWithKonpensasi: (newLoanId: string, oldLoanId: string, sisaPokok: number, totalSisaBunga: number, rateBunga: number) => Promise<void>
   processAllInstallments: () => Promise<void>
   deleteLoan: (id: string) => Promise<void>
 }
@@ -115,7 +115,7 @@ export const useLoanStore = create<LoanState>((set, get) => ({
       alert("Gagal merubah status pinjaman.")
     }
   },
-  approveWithKonpensasi: async (newLoanId, oldLoanId, sisaPokok, bungaPelunasan) => {
+  approveWithKonpensasi: async (newLoanId, oldLoanId, sisaPokok, totalSisaBunga, rateBunga) => {
     const state = get()
     
     // 1. Mark old loan as Lunas
@@ -136,12 +136,12 @@ export const useLoanStore = create<LoanState>((set, get) => ({
         keterangan: `Pelunasan Konpensasi ${oldLoan.nama}`
       })
       
-      // Log PENDAPATAN_BUNGA (Bunga 1 Bulan Berjalan)
+      // Log PENDAPATAN_BUNGA (Akumulasi Sisa Bunga)
       await useTransactionStore.getState().addTransaction({
         member_id: oldLoan.member_id,
         tipe: "PENDAPATAN_BUNGA",
-        nominal: bungaPelunasan,
-        keterangan: `Bunga Konpensasi ${oldLoan.nama} (Rate: ${bungaPelunasan})`
+        nominal: totalSisaBunga,
+        keterangan: `Bunga Konpensasi ${oldLoan.nama} (Rate: ${rateBunga})`
       })
     }
 
