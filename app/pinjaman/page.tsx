@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/authStore"
 import { useMemberStore } from "@/store/memberStore"
 import { formatRupiah, cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, X, Search, FileText } from "lucide-react"
+import { Plus, X, Search, FileText, Trash2 } from "lucide-react"
 import { useSettingsStore } from "@/store/settingsStore"
 import jsPDF from "jspdf"
 
@@ -23,7 +23,7 @@ export default function PinjamanPage() {
   const [konpensasiDialog, setKonpensasiDialog] = useState<{ isOpen: boolean, newLoan: any, oldLoan: any } | null>(null)
   const { bungaPinjaman, companyName, companyLogo } = useSettingsStore()
 
-  const { amount, tenure, setAmount, setTenure, monthlyInstallment, totalPayment, loans, addLoan, addMigratedLoan, updateLoanStatus, approveWithKonpensasi } = useLoanStore()
+  const { amount, tenure, setAmount, setTenure, monthlyInstallment, totalPayment, loans, addLoan, addMigratedLoan, updateLoanStatus, approveWithKonpensasi, deleteLoan } = useLoanStore()
   const { user } = useAuthStore()
   const { members } = useMemberStore()
   const [searchTerm, setSearchTerm] = useState("")
@@ -278,6 +278,18 @@ export default function PinjamanPage() {
                         className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-medium text-[10px] px-2 py-1 rounded transition-colors"
                       >
                         Input Bayar
+                      </button>
+                    )}
+                    {user?.role === "admin" && (
+                      <button 
+                        onClick={() => {
+                          if(confirm("Apakah Anda yakin ingin menghapus pinjaman ini selamanya?")) {
+                            deleteLoan(loan.id)
+                          }
+                        }}
+                        className="text-rose-600 hover:text-rose-800 font-medium text-[11px] transition-colors bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded border border-rose-100 flex items-center gap-1"
+                      >
+                        <Trash2 size={12} /> Hapus
                       </button>
                     )}
                     <button className="text-slate-600 hover:text-slate-800 font-medium text-[11px] transition-colors bg-slate-100 px-2 py-1 rounded">Detail</button>

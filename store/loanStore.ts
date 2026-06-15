@@ -28,6 +28,7 @@ interface LoanState {
   updateLoanStatus: (id: string, status: "Approved" | "Rejected" | "Lunas") => Promise<void>
   approveWithKonpensasi: (newLoanId: string, oldLoanId: string, pelunasanAmount: number) => Promise<void>
   processAllInstallments: () => Promise<void>
+  deleteLoan: (id: string) => Promise<void>
 }
 
 export const useLoanStore = create<LoanState>((set, get) => ({
@@ -197,5 +198,15 @@ export const useLoanStore = create<LoanState>((set, get) => ({
         supabase.from('loans').update({ cicilan_ke: l.cicilan_ke + 1 }).eq('id', l.id)
       )
     )
+  },
+  deleteLoan: async (id) => {
+    const state = get()
+    const { error } = await supabase.from('loans').delete().eq('id', id)
+    if (!error) {
+      set({ loans: state.loans.filter(l => l.id !== id) })
+    } else {
+      console.error("Error deleting loan:", error)
+      alert("Gagal menghapus pinjaman.")
+    }
   }
 }))
