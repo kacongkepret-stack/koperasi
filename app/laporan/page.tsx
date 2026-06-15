@@ -89,6 +89,7 @@ export default function LaporanPage() {
   // ----------------------------------------------------
   const pemasukanIuranWajib = members.length * simpananWajibBulanan
   const pemasukanPokokPinjaman = activeLoans
+    .filter(l => l.cicilan_ke > 0)
     .map(l => ({
       nama: l.nama,
       dept: members.find(m => m.nama === l.nama)?.departemen || "-",
@@ -97,6 +98,7 @@ export default function LaporanPage() {
   const totalPemasukanPokok = pemasukanPokokPinjaman.reduce((a, b) => a + b.nominal, 0)
 
   const groupedBunga = activeLoans
+    .filter(l => l.cicilan_ke > 0)
     .reduce((acc, l) => {
       const bunga = l.nominal * (bungaPinjaman / 100)
       acc[bunga] = (acc[bunga] || 0) + bunga
