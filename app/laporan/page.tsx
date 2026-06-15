@@ -48,7 +48,7 @@ export default function LaporanPage() {
         potonganPinjaman: potonganPinjaman,
         totalPotongan: simpananWajibBulanan + potonganPinjaman,
         potonganKe: loan.cicilan_ke,
-        sisaHutang: potonganPinjaman * (loan.tenor - loan.cicilan_ke)
+        sisaHutang: pokokPerBulan * (loan.tenor - loan.cicilan_ke)
       }
     })
     .filter(Boolean) as any[]
