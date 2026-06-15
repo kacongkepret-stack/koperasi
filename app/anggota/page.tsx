@@ -17,7 +17,7 @@ export default function AnggotaPage() {
   const [selectedUser, setSelectedUser] = useState<Anggota | null>(null)
   const [isAddMode, setIsAddMode] = useState(false)
   const [isEditSaldoMode, setIsEditSaldoMode] = useState(false)
-  const [saldoForm, setSaldoForm] = useState({ pokok: 0, wajib: 0 })
+  const [saldoForm, setSaldoForm] = useState({ pokok: 0, wajib: 0, shu: 0 })
 
   // Form states
   const [formData, setFormData] = useState({
@@ -265,7 +265,7 @@ export default function AnggotaPage() {
                       <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Informasi Finansial</h4>
                       <button 
                         onClick={() => {
-                          setSaldoForm({ pokok: selectedUser.saldo_pokok, wajib: selectedUser.saldo_wajib })
+                          setSaldoForm({ pokok: selectedUser.saldo_pokok, wajib: selectedUser.saldo_wajib, shu: selectedUser.saldo_shu || 0 })
                           setIsEditSaldoMode(true)
                         }}
                         className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded transition-colors"
@@ -282,9 +282,13 @@ export default function AnggotaPage() {
                         <span className="text-slate-600">Simpanan Wajib</span>
                         <span className="font-bold text-slate-900">{formatRupiah(selectedUser.saldo_wajib)}</span>
                       </div>
+                      <div className="p-3 flex justify-between items-center text-xs">
+                        <span className="text-slate-600">Saldo SHU</span>
+                        <span className="font-bold text-slate-900">{formatRupiah(selectedUser.saldo_shu || 0)}</span>
+                      </div>
                       <div className="p-3 flex justify-between items-center text-xs bg-slate-50/50">
                         <span className="text-slate-600 font-semibold">Total Saldo</span>
-                        <span className="font-bold text-emerald-600">{formatRupiah(selectedUser.saldo_pokok + selectedUser.saldo_wajib)}</span>
+                        <span className="font-bold text-emerald-600">{formatRupiah(selectedUser.saldo_pokok + selectedUser.saldo_wajib + (selectedUser.saldo_shu || 0))}</span>
                       </div>
                     </div>
                   </div>
@@ -313,8 +317,8 @@ export default function AnggotaPage() {
                 
                 <form onSubmit={(e) => {
                   e.preventDefault()
-                  setSaldoAwal(selectedUser.id, saldoForm.pokok, saldoForm.wajib)
-                  setSelectedUser({...selectedUser, saldo_pokok: saldoForm.pokok, saldo_wajib: saldoForm.wajib})
+                  setSaldoAwal(selectedUser.id, saldoForm.pokok, saldoForm.wajib, saldoForm.shu)
+                  setSelectedUser({...selectedUser, saldo_pokok: saldoForm.pokok, saldo_wajib: saldoForm.wajib, saldo_shu: saldoForm.shu})
                   setIsEditSaldoMode(false)
                 }}>
                   <div className="p-5 space-y-4">
@@ -333,6 +337,15 @@ export default function AnggotaPage() {
                         type="number" 
                         value={saldoForm.wajib || ""}
                         onChange={e => setSaldoForm({...saldoForm, wajib: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-700 uppercase">Saldo SHU Tahun Lalu</label>
+                      <input 
+                        type="number" 
+                        value={saldoForm.shu || ""}
+                        onChange={e => setSaldoForm({...saldoForm, shu: Number(e.target.value)})}
                         className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500" 
                       />
                     </div>

@@ -10,7 +10,7 @@ import { useLoanStore } from "@/store/loanStore"
 import { useMemberStore } from "@/store/memberStore"
 import { supabase } from "@/lib/supabase"
 
-type TabType = "profil" | "departemen" | "pengeluaran" | "operasional" | "keamanan"
+type TabType = "profil" | "departemen" | "pengeluaran" | "operasional" | "historis" | "keamanan"
 
 export default function PengaturanPage() {
   const { user } = useAuthStore()
@@ -20,7 +20,8 @@ export default function PengaturanPage() {
     companyName, simpananWajibBulanan, bungaPinjaman, saldoBantuan, 
     setCompanyName, setSimpananWajibBulanan, setBungaPinjaman, setSaldoBantuan, 
     departments, addDepartment, removeDepartment, expenses, addExpense, 
-    lastPostedSimpananMonth, lastPostedCicilanMonth, setLastPostedSimpananMonth, setLastPostedCicilanMonth 
+    lastPostedSimpananMonth, lastPostedCicilanMonth, setLastPostedSimpananMonth, setLastPostedCicilanMonth,
+    historicalLaba, setHistoricalLaba 
   } = useSettingsStore()
   
   const [activeTab, setActiveTab] = useState<TabType>("profil")
@@ -132,7 +133,7 @@ export default function PengaturanPage() {
       </div>
 
       <div className="bg-white/60 p-1 rounded-lg inline-flex flex-wrap gap-1 border border-slate-200/60 shadow-sm backdrop-blur-md">
-        {(["profil", "departemen", "pengeluaran", "operasional", "keamanan"] as TabType[]).map((tab) => (
+        {(["profil", "departemen", "pengeluaran", "operasional", "historis", "keamanan"] as TabType[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -350,6 +351,35 @@ export default function PengaturanPage() {
                   </button>
                 </div>
 
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "historis" && (
+            <Card>
+              <CardHeader className="border-b border-slate-100/50 bg-slate-50/30">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  Data Historis Laba Bunga (Tahun {new Date().getFullYear()})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="mb-4 text-xs text-slate-500">
+                  Masukkan data laba (Pendapatan Bunga Pinjaman) untuk bulan-bulan sebelum Anda menggunakan sistem ini (misal: Januari - Mei). Data ini akan dipakai untuk menyempurnakan kalkulasi tabel Rugi Laba 12 Bulan dan Laba Bersih Tahunan.
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember"].map(bulan => (
+                    <div key={bulan} className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">{bulan}</label>
+                      <input 
+                        type="number" 
+                        value={historicalLaba[bulan] || ""}
+                        onChange={(e) => setHistoricalLaba(bulan, Number(e.target.value))}
+                        placeholder={`Laba ${bulan}`}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500" 
+                      />
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

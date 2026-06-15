@@ -29,12 +29,14 @@ interface SettingsState {
   lastPostedCicilanMonth: string
   setLastPostedSimpananMonth: (month: string) => void
   setLastPostedCicilanMonth: (month: string) => void
+  historicalLaba: Record<string, number>
+  setHistoricalLaba: (month: string, nominal: number) => Promise<void>
   init: () => Promise<void>
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       companyName: "Koperasi Hotel Nusantara",
       companyLogo: "",
       simpananWajibBulanan: 100000,
@@ -44,6 +46,7 @@ export const useSettingsStore = create<SettingsState>()(
       lastPostedCicilanMonth: "",
       departments: ["Front Office", "Housekeeping", "HRD", "Engineering", "Finance", "F&B Service", "F&B Product", "GM", "Mice", "Security", "Sales"],
       expenses: [],
+      historicalLaba: {},
   setCompanyName: async (name) => {
     const { error } = await supabase.from('settings').update({ company_name: name }).eq('id', 1)
     if (error) console.error("Error updating company name:", error)
@@ -69,6 +72,13 @@ export const useSettingsStore = create<SettingsState>()(
     if (error) console.error("Error updating saldo bantuan:", error)
     set({ saldoBantuan: nominal })
   },
+  setHistoricalLaba: async (month, nominal) => {
+    const currentState = get().historicalLaba
+    const newState = { ...currentState, [month]: nominal }
+    const { error } = await supabase.from('settings').update({ historical_laba: newState }).eq('id', 1)
+    if (error) console.error("Error updating historical laba:", error)
+    set({ historicalLaba: newState })
+  },
   addDepartment: (dept) => set((state) => ({ departments: [...state.departments, dept] })),
   removeDepartment: (dept) => set((state) => ({ departments: state.departments.filter(d => d !== dept) })),
   addExpense: (expense) => set((state) => ({
@@ -84,7 +94,8 @@ export const useSettingsStore = create<SettingsState>()(
         companyLogo: data.company_logo || "",
         simpananWajibBulanan: Number(data.simpanan_wajib_bulanan),
         bungaPinjaman: data.bunga_pinjaman !== null && data.bunga_pinjaman !== undefined ? Number(data.bunga_pinjaman) : 1.0,
-        saldoBantuan: data.saldo_bantuan ? Number(data.saldo_bantuan) : 0
+        saldoBantuan: data.saldo_bantuan ? Number(data.saldo_bantuan) : 0,
+        historicalLaba: data.historical_laba || {}
       })
     }
   }

@@ -12,6 +12,8 @@ import { useLoanStore } from "@/store/loanStore"
 import { useSettingsStore } from "@/store/settingsStore"
 import { useTransactionStore } from "@/store/transactionStore"
 
+const BULAN_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember"]
+
 export default function LaporanPage() {
   const [showToast, setShowToast] = useState(false)
   const [toastMsg, setToastMsg] = useState({ title: "", desc: "" })
@@ -21,7 +23,7 @@ export default function LaporanPage() {
   const { members } = useMemberStore()
   const { loans } = useLoanStore()
   const { transactions } = useTransactionStore()
-  const { simpananWajibBulanan, bungaPinjaman, companyName, companyLogo, saldoBantuan } = useSettingsStore()
+  const { companyName, companyLogo, simpananWajibBulanan, bungaPinjaman, saldoBantuan, historicalLaba } = useSettingsStore()
 
   const activeLoans = loans.filter(l => l.status === "Approved")
   const currentMonthStr = new Date().toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
@@ -63,7 +65,8 @@ export default function LaporanPage() {
   // ----------------------------------------------------
   const totalSaldoPokok = members.reduce((a, b) => a + b.saldo_pokok, 0)
   const totalSaldoWajib = members.reduce((a, b) => a + b.saldo_wajib, 0)
-  const totalSaldoKeseluruhan = totalSaldoPokok + totalSaldoWajib
+  const totalSaldoSHU = members.reduce((a, b) => a + (b.saldo_shu || 0), 0)
+  const totalSaldoKeseluruhan = totalSaldoPokok + totalSaldoWajib + totalSaldoSHU
 
   // ----------------------------------------------------
   // DATA 3: RUGI LABA (PENDAPATAN BUNGA)
@@ -72,8 +75,14 @@ export default function LaporanPage() {
     return a + (l.nominal * (bungaPinjaman / 100))
   }, 0)
 
-  const jasaPengurus = totalPendapatanBungaBulanIni * 0.05
-  const shuBersih = totalPendapatanBungaBulanIni * 0.95
+  // Hitung total laba setahun: bulan berjalan pakai sistem, sisanya dari history
+  const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
+    if (bulan === currentMonthStr) return acc + totalPendapatanBungaBulanIni
+    return acc + (historicalLaba?.[bulan] || 0)
+  }, 0)
+
+  const jasaPengurus = totalLabaTahunan * 0.05
+  const shuBersih = totalLabaTahunan * 0.95
 
   // ----------------------------------------------------
   // DATA 4: LAPORAN KEUANGAN (ARUS KAS)
@@ -151,13 +160,15 @@ export default function LaporanPage() {
       "DEPT": m.departemen,
       "SALDO POKOK": m.saldo_pokok,
       "SALDO WAJIB": m.saldo_wajib,
-      "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib,
-      "ESTIMASI SHU": totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib) / totalSaldoKeseluruhan) * shuBersih : 0
+      "SALDO SHU": m.saldo_shu || 0,
+      "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0),
+      "ESTIMASI SHU": totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0
     }))
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "Total", 
       "SALDO POKOK": totalSaldoPokok,
       "SALDO WAJIB": totalSaldoWajib,
+      "SALDO SHU": totalSaldoSHU,
       "TOTAL TABUNGAN": totalSaldoKeseluruhan,
       "ESTIMASI SHU": shuBersih
     } as any)
@@ -165,11 +176,14 @@ export default function LaporanPage() {
     XLSX.utils.book_append_sheet(wb, ws2, "Data Tabungan")
 
     // 3. Sheet Rugi Laba
-    const ws3Data = [
-      { "Bulan": currentMonthStr, "Pendapatan Bunga Pinjaman": totalPendapatanBungaBulanIni },
-      { "Bulan": "Dikurangi: Jasa Pengurus (5%)", "Pendapatan Bunga Pinjaman": -jasaPengurus },
-      { "Bulan": "SHU Bersih Koperasi (95%)", "Pendapatan Bunga Pinjaman": shuBersih }
-    ]
+    const ws3Data = BULAN_NAMES.map(bulan => ({
+      "Bulan": bulan, 
+      "Pendapatan Bunga Pinjaman": bulan === currentMonthStr ? totalPendapatanBungaBulanIni : (historicalLaba?.[bulan] || 0)
+    }))
+    ws3Data.push({ "Bulan": "Jumlah Pendapatan Bunga", "Pendapatan Bunga Pinjaman": totalLabaTahunan })
+    ws3Data.push({ "Bulan": "Dikurangi: Jasa Pengurus (5%)", "Pendapatan Bunga Pinjaman": -jasaPengurus })
+    ws3Data.push({ "Bulan": "SHU Bersih Koperasi (95%)", "Pendapatan Bunga Pinjaman": shuBersih })
+    
     const ws3 = XLSX.utils.json_to_sheet(ws3Data)
     XLSX.utils.book_append_sheet(wb, ws3, "Rugi Laba")
 
@@ -228,12 +242,12 @@ export default function LaporanPage() {
         doc.text(`DATA TABUNGAN - PERIODE ${new Date().getFullYear()}`, 14, 34)
         autoTable(doc, {
           startY: 42,
-          head: [['NO', 'NAMA', 'DEPT', 'SALDO POKOK', 'SALDO WAJIB', 'TOTAL', 'EST. SHU']],
+          head: [['NO', 'NAMA', 'DEPT', 'POKOK', 'WAJIB', 'SHU', 'TOTAL', 'EST. SHU']],
           body: [
             ...members.map((m, i) => [
-              i+1, m.nama, m.departemen || "-", formatRupiah(m.saldo_pokok), formatRupiah(m.saldo_wajib), formatRupiah(m.saldo_pokok + m.saldo_wajib), formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib) / totalSaldoKeseluruhan) * shuBersih : 0)
+              i+1, m.nama, m.departemen || "-", formatRupiah(m.saldo_pokok), formatRupiah(m.saldo_wajib), formatRupiah(m.saldo_shu || 0), formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)), formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)
             ]),
-            ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoKeseluruhan), formatRupiah(shuBersih)]
+            ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoSHU), formatRupiah(totalSaldoKeseluruhan), formatRupiah(shuBersih)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225] },
@@ -248,7 +262,11 @@ export default function LaporanPage() {
           startY: 46,
           head: [['Bulan', 'Pendapatan Bunga Pinjaman']],
           body: [
-            [currentMonthStr, formatRupiah(totalPendapatanBungaBulanIni)],
+            ...BULAN_NAMES.map(bulan => [
+              bulan, 
+              formatRupiah(bulan === currentMonthStr ? totalPendapatanBungaBulanIni : (historicalLaba?.[bulan] || 0))
+            ]),
+            ['Jumlah Pendapatan Bunga', formatRupiah(totalLabaTahunan)],
             ['Dikurangi: Jasa Pengurus (5%)', `-${formatRupiah(jasaPengurus)}`],
             ['SHU Bersih Koperasi (95%)', formatRupiah(shuBersih)]
           ],
@@ -464,6 +482,7 @@ export default function LaporanPage() {
                     <th className="px-4 py-3 border-r border-slate-200">DEPT</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO POKOK</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO WAJIB</th>
+                    <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO SHU</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">TOTAL TABUNGAN</th>
                     <th className="px-4 py-3 text-right">ESTIMASI SHU</th>
                   </tr>
@@ -476,8 +495,9 @@ export default function LaporanPage() {
                       <td className="px-4 py-3 border-r border-slate-200">{m.departemen || "-"}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_wajib)}</td>
-                      <td className="px-4 py-3 border-r border-slate-200 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
+                      <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_shu || 0)}</td>
+                      <td className="px-4 py-3 border-r border-slate-200 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
+                      <td className="px-4 py-3 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
                     </tr>
                   ))}
                   {members.length > 0 && (
@@ -485,6 +505,7 @@ export default function LaporanPage() {
                       <td colSpan={3} className="px-4 py-3 border-r border-slate-300 text-center">Total</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoPokok)}</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoWajib)}</td>
+                      <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right text-emerald-700">{formatRupiah(totalSaldoKeseluruhan)}</td>
                       <td className="px-4 py-3 text-right text-blue-700 bg-blue-50/50">{formatRupiah(shuBersih)}</td>
                     </tr>
@@ -506,9 +527,15 @@ export default function LaporanPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white text-center">
-                  <tr className="border-b border-slate-100">
-                    <td className="px-6 py-3 border-r border-slate-200 font-medium">{currentMonthStr}</td>
-                    <td className="px-6 py-3 text-emerald-600 font-semibold">{formatRupiah(totalPendapatanBungaBulanIni)}</td>
+                  {BULAN_NAMES.map((bulan, idx) => (
+                    <tr key={idx} className="border-b border-slate-100">
+                      <td className="px-6 py-3 border-r border-slate-200 font-medium">{bulan}</td>
+                      <td className="px-6 py-3 text-slate-700">{formatRupiah(bulan === currentMonthStr ? totalPendapatanBungaBulanIni : (historicalLaba?.[bulan] || 0))}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-slate-200 bg-slate-50">
+                    <td className="px-6 py-3 border-r border-slate-200 font-bold text-slate-800">Jumlah Pendapatan Bunga</td>
+                    <td className="px-6 py-3 text-emerald-600 font-bold">{formatRupiah(totalLabaTahunan)}</td>
                   </tr>
                   <tr className="border-b border-slate-100 bg-amber-50/30">
                     <td className="px-6 py-3 border-r border-slate-200 font-medium text-amber-700">Dikurangi: Jasa Pengurus (5%)</td>

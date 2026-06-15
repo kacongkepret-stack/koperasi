@@ -32,7 +32,7 @@ export default function SimpananPage() {
       if (member) {
         const newPokok = tx.tipe === "SIMPANAN_POKOK" ? member.saldo_pokok - tx.nominal : member.saldo_pokok
         const newWajib = tx.tipe === "SIMPANAN_WAJIB" ? member.saldo_wajib - tx.nominal : member.saldo_wajib
-        await setSaldoAwal(member.id, newPokok, newWajib)
+        await setSaldoAwal(member.id, newPokok, newWajib, member.saldo_shu || 0)
       }
     }
     await deleteTransaction(tx.id)
@@ -218,7 +218,7 @@ export default function SimpananPage() {
                 if (member) {
                   const newPokok = activeTab === "pokok" ? member.saldo_pokok + installmentAmount : member.saldo_pokok
                   const newWajib = activeTab === "wajib" ? member.saldo_wajib + installmentAmount : member.saldo_wajib
-                  await setSaldoAwal(selectedMemberId, newPokok, newWajib)
+                  await setSaldoAwal(selectedMemberId, newPokok, newWajib, member.saldo_shu || 0)
                 }
 
                 await addTransaction({
