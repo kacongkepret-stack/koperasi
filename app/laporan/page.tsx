@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { formatRupiah, cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
-import { FileSpreadsheet, FileText, CheckCircle2, ArrowDownToLine, ArrowUpFromLine, Wallet } from "lucide-react"
+import { FileSpreadsheet, FileText, CheckCircle2, ArrowDownToLine, ArrowUpFromLine, Wallet, PieChart } from "lucide-react"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -151,13 +151,15 @@ export default function LaporanPage() {
       "DEPT": m.departemen,
       "SALDO POKOK": m.saldo_pokok,
       "SALDO WAJIB": m.saldo_wajib,
-      "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib
+      "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib,
+      "ESTIMASI SHU": totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib) / totalSaldoKeseluruhan) * shuBersih : 0
     }))
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "Total", 
       "SALDO POKOK": totalSaldoPokok,
       "SALDO WAJIB": totalSaldoWajib,
-      "TOTAL TABUNGAN": totalSaldoKeseluruhan
+      "TOTAL TABUNGAN": totalSaldoKeseluruhan,
+      "ESTIMASI SHU": shuBersih
     } as any)
     const ws2 = XLSX.utils.json_to_sheet(ws2Data)
     XLSX.utils.book_append_sheet(wb, ws2, "Data Tabungan")
@@ -226,12 +228,12 @@ export default function LaporanPage() {
         doc.text(`DATA TABUNGAN - PERIODE ${new Date().getFullYear()}`, 14, 34)
         autoTable(doc, {
           startY: 42,
-          head: [['NO', 'NAMA', 'DEPT', 'SALDO POKOK', 'SALDO WAJIB', 'TOTAL']],
+          head: [['NO', 'NAMA', 'DEPT', 'SALDO POKOK', 'SALDO WAJIB', 'TOTAL', 'EST. SHU']],
           body: [
             ...members.map((m, i) => [
-              i+1, m.nama, m.departemen || "-", formatRupiah(m.saldo_pokok), formatRupiah(m.saldo_wajib), formatRupiah(m.saldo_pokok + m.saldo_wajib)
+              i+1, m.nama, m.departemen || "-", formatRupiah(m.saldo_pokok), formatRupiah(m.saldo_wajib), formatRupiah(m.saldo_pokok + m.saldo_wajib), formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib) / totalSaldoKeseluruhan) * shuBersih : 0)
             ]),
-            ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoKeseluruhan)]
+            ['', '', 'TOTAL', formatRupiah(totalSaldoPokok), formatRupiah(totalSaldoWajib), formatRupiah(totalSaldoKeseluruhan), formatRupiah(shuBersih)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225] },
@@ -427,7 +429,33 @@ export default function LaporanPage() {
 
           {/* TAB 2: TABUNGAN */}
           {activeTab === "tabungan" && (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto p-4 md:p-5 bg-slate-50/50">
+              
+              <div className="mb-5 bg-white border border-emerald-100 shadow-sm rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="text-sm">
+                  <h3 className="font-bold text-emerald-900 flex items-center gap-2">
+                    <span className="bg-emerald-100 text-emerald-600 p-1.5 rounded-lg"><PieChart size={16} /></span>
+                    Informasi Pembagian SHU Bulan {currentMonthStr}
+                  </h3>
+                  <p className="text-[11px] mt-1.5 text-slate-500 max-w-sm leading-relaxed">SHU Bersih dibagikan proporsional berdasarkan total tabungan masing-masing anggota. Potongan Jasa Pengurus adalah 5% dari laba.</p>
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                  <div className="bg-slate-50 flex-1 md:flex-none px-4 py-2.5 rounded-lg border border-slate-200 text-center">
+                    <div className="text-slate-500 text-[9px] font-bold tracking-wider uppercase mb-0.5">Laba Kotor</div>
+                    <div className="text-slate-800 font-semibold text-xs">{formatRupiah(totalPendapatanBungaBulanIni)}</div>
+                  </div>
+                  <div className="bg-amber-50 flex-1 md:flex-none px-4 py-2.5 rounded-lg border border-amber-200/60 text-center">
+                    <div className="text-amber-700 text-[9px] font-bold tracking-wider uppercase mb-0.5">Jasa Pengurus (5%)</div>
+                    <div className="text-amber-700 font-bold text-xs">-{formatRupiah(jasaPengurus)}</div>
+                  </div>
+                  <div className="bg-emerald-600 flex-1 md:flex-none px-4 py-2.5 rounded-lg border border-emerald-700 text-center shadow-sm">
+                    <div className="text-emerald-100 text-[9px] font-bold tracking-wider uppercase mb-0.5">SHU Dibagikan (95%)</div>
+                    <div className="text-white font-bold text-xs">{formatRupiah(shuBersih)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               <table className="w-full text-sm text-left border-collapse">
                 <thead className="bg-slate-50 text-slate-700 text-xs font-bold border-b border-slate-200">
                   <tr>
@@ -436,7 +464,8 @@ export default function LaporanPage() {
                     <th className="px-4 py-3 border-r border-slate-200">DEPT</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO POKOK</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">SALDO WAJIB</th>
-                    <th className="px-4 py-3 text-right">TOTAL TABUNGAN</th>
+                    <th className="px-4 py-3 border-r border-slate-200 text-right">TOTAL TABUNGAN</th>
+                    <th className="px-4 py-3 text-right">ESTIMASI SHU</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
@@ -447,7 +476,8 @@ export default function LaporanPage() {
                       <td className="px-4 py-3 border-r border-slate-200">{m.departemen || "-"}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(m.saldo_wajib)}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib)}</td>
+                      <td className="px-4 py-3 border-r border-slate-200 text-right font-semibold text-emerald-600">{formatRupiah(m.saldo_pokok + m.saldo_wajib)}</td>
+                      <td className="px-4 py-3 text-right font-bold text-blue-600 bg-blue-50/30">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
                     </tr>
                   ))}
                   {members.length > 0 && (
@@ -455,11 +485,13 @@ export default function LaporanPage() {
                       <td colSpan={3} className="px-4 py-3 border-r border-slate-300 text-center">Total</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoPokok)}</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalSaldoWajib)}</td>
-                      <td className="px-4 py-3 text-right text-emerald-700">{formatRupiah(totalSaldoKeseluruhan)}</td>
+                      <td className="px-4 py-3 border-r border-slate-300 text-right text-emerald-700">{formatRupiah(totalSaldoKeseluruhan)}</td>
+                      <td className="px-4 py-3 text-right text-blue-700 bg-blue-50/50">{formatRupiah(shuBersih)}</td>
                     </tr>
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
