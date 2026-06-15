@@ -88,19 +88,32 @@ export default function LaporanPage() {
   // DATA 4: LAPORAN KEUANGAN (ARUS KAS)
   // ----------------------------------------------------
   const pemasukanIuranWajib = members.length * simpananWajibBulanan
-  const pemasukanPokokPinjaman = activeLoans.map(l => ({
-    nama: l.nama,
-    dept: members.find(m => m.nama === l.nama)?.departemen || "-",
-    nominal: l.nominal / l.tenor
-  }))
+  const pemasukanPokokPinjaman = activeLoans
+    .filter(l => l.cicilan_ke > 0)
+    .map(l => ({
+      nama: l.nama,
+      dept: members.find(m => m.nama === l.nama)?.departemen || "-",
+      nominal: l.nominal / l.tenor
+    }))
   const totalPemasukanPokok = pemasukanPokokPinjaman.reduce((a, b) => a + b.nominal, 0)
 
-  // Mengelompokkan bunga (Sesuai Gambar 4: Bunga 20000 -> 160000)
-  const groupedBunga = activeLoans.reduce((acc, l) => {
-    const bunga = l.nominal * (bungaPinjaman / 100)
-    acc[bunga] = (acc[bunga] || 0) + bunga
-    return acc
-  }, {} as Record<number, number>)
+  const groupedBunga = activeLoans
+    .filter(l => l.cicilan_ke > 0)
+    .reduce((acc, l) => {
+      const bunga = l.nominal * (bungaPinjaman / 100)
+      acc[bunga] = (acc[bunga] || 0) + bunga
+      return acc
+    }, {} as Record<number, number>)
+
+  // Tambahkan juga Bunga dari Pelunasan (Konpensasi)
+  transactions.filter(t => t.tipe === "PENDAPATAN_BUNGA").forEach(t => {
+    // ekstrak rate bunga dari keterangan, cth: "Bunga Konpensasi I Putu (Rate: 60000)"
+    const match = t.keterangan.match(/Rate:\s*(\d+)/)
+    if (match && match[1]) {
+      const rate = Number(match[1])
+      groupedBunga[rate] = (groupedBunga[rate] || 0) + t.nominal
+    }
+  })
 
   const totalSisaSaldoAwal = saldoBantuan
   

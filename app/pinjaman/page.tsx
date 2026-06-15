@@ -101,12 +101,14 @@ export default function PinjamanPage() {
     
     const pokokPerBulan = oldLoan.nominal / oldLoan.tenor
     const bungaPerBulan = oldLoan.nominal * (bungaPinjaman / 100)
-    const angsuranPerBulan = pokokPerBulan + bungaPerBulan
     const sisaBulan = oldLoan.tenor - oldLoan.cicilan_ke
-    const pelunasanAmount = angsuranPerBulan * sisaBulan
+    
+    // Pelunasan = Sisa Pokok + Bunga 1 Bulan Berjalan
+    const sisaPokok = pokokPerBulan * sisaBulan
+    const pelunasanAmount = sisaPokok + bungaPerBulan
     const pencairanBersih = newLoan.nominal - pelunasanAmount
 
-    await approveWithKonpensasi(newLoan.id, oldLoan.id, pelunasanAmount)
+    await approveWithKonpensasi(newLoan.id, oldLoan.id, sisaPokok, bungaPerBulan)
     printBuktiPencairan(newLoan, oldLoan, pelunasanAmount, pencairanBersih)
     setKonpensasiDialog(null)
   }
@@ -509,12 +511,12 @@ export default function PinjamanPage() {
                   <span className="font-semibold text-slate-900">{formatRupiah(konpensasiDialog.newLoan.nominal)}</span>
                 </div>
                 <div className="flex justify-between text-rose-600">
-                  <span>Pelunasan Lama (Sisa {konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke}x):</span>
+                  <span>Pelunasan Lama (Sisa {konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke}x Pokok + Bunga 1 Bln):</span>
                   <span className="font-semibold">
                     -{formatRupiah(
-                      ((konpensasiDialog.oldLoan.nominal / konpensasiDialog.oldLoan.tenor) + 
-                      (konpensasiDialog.oldLoan.nominal * (bungaPinjaman/100))) * 
-                      (konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke)
+                      ((konpensasiDialog.oldLoan.nominal / konpensasiDialog.oldLoan.tenor) * 
+                      (konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke)) + 
+                      (konpensasiDialog.oldLoan.nominal * (bungaPinjaman/100))
                     )}
                   </span>
                 </div>
@@ -524,9 +526,9 @@ export default function PinjamanPage() {
                   <span>
                     {formatRupiah(
                       konpensasiDialog.newLoan.nominal - 
-                      (((konpensasiDialog.oldLoan.nominal / konpensasiDialog.oldLoan.tenor) + 
-                      (konpensasiDialog.oldLoan.nominal * (bungaPinjaman/100))) * 
-                      (konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke))
+                      (((konpensasiDialog.oldLoan.nominal / konpensasiDialog.oldLoan.tenor) * 
+                      (konpensasiDialog.oldLoan.tenor - konpensasiDialog.oldLoan.cicilan_ke)) + 
+                      (konpensasiDialog.oldLoan.nominal * (bungaPinjaman/100)))
                     )}
                   </span>
                 </div>
