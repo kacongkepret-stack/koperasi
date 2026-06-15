@@ -47,7 +47,8 @@ export default function LaporanPage() {
         iuran: simpananWajibBulanan,
         potonganPinjaman: potonganPinjaman,
         totalPotongan: simpananWajibBulanan + potonganPinjaman,
-        potonganKe: loan.cicilan_ke
+        potonganKe: loan.cicilan_ke,
+        sisaHutang: potonganPinjaman * (loan.tenor - loan.cicilan_ke)
       }
     })
     .filter(Boolean) as any[]
@@ -55,6 +56,7 @@ export default function LaporanPage() {
   const totalIuranPeminjam = daftarPeminjam.reduce((a, b) => a + b.iuran, 0)
   const totalPotonganPinjaman = daftarPeminjam.reduce((a, b) => a + b.potonganPinjaman, 0)
   const totalSemuaPotongan = daftarPeminjam.reduce((a, b) => a + b.totalPotongan, 0)
+  const totalSisaHutang = daftarPeminjam.reduce((a, b) => a + b.sisaHutang, 0)
 
   // ----------------------------------------------------
   // DATA 2: DATA TABUNGAN (BUKU SALDO)
@@ -116,14 +118,16 @@ export default function LaporanPage() {
       [`IURAN ${currentMonthStr.toUpperCase()}`]: r.iuran,
       "POTONGAN PINJAMAN": r.potonganPinjaman,
       "TOTAL POTONGAN": r.totalPotongan,
-      "POTONGAN KE": `KE ${r.potonganKe}`
+      "POTONGAN KE": `KE ${r.potonganKe}`,
+      "SISA HUTANG": r.sisaHutang
     }))
     ws1Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "Total", 
       [`IURAN ${currentMonthStr.toUpperCase()}`]: totalIuranPeminjam,
       "POTONGAN PINJAMAN": totalPotonganPinjaman,
       "TOTAL POTONGAN": totalSemuaPotongan,
-      "POTONGAN KE": ""
+      "POTONGAN KE": "",
+      "SISA HUTANG": totalSisaHutang
     } as any)
     const ws1 = XLSX.utils.json_to_sheet(ws1Data)
     XLSX.utils.book_append_sheet(wb, ws1, "Daftar Peminjam")
@@ -192,12 +196,12 @@ export default function LaporanPage() {
         doc.text(`DAFTAR PEMINJAM - PERIODE ${currentMonthStr.toUpperCase()}`, 14, 34)
         autoTable(doc, {
           startY: 42,
-          head: [['NO', 'NAMA', 'DEPT', 'IURAN', 'POTONGAN PINJ.', 'TOTAL POTONGAN', 'KE-']],
+          head: [['NO', 'NAMA', 'DEPT', 'IURAN', 'POTONGAN PINJ.', 'TOTAL POTONGAN', 'KE-', 'SISA HUTANG']],
           body: [
             ...daftarPeminjam.map((r, i) => [
-              i+1, r.nama, r.dept, formatRupiah(r.iuran), formatRupiah(r.potonganPinjaman), formatRupiah(r.totalPotongan), r.potonganKe
+              i+1, r.nama, r.dept, formatRupiah(r.iuran), formatRupiah(r.potonganPinjaman), formatRupiah(r.totalPotongan), r.potonganKe, formatRupiah(r.sisaHutang)
             ]),
-            ['', '', 'TOTAL', formatRupiah(totalIuranPeminjam), formatRupiah(totalPotonganPinjaman), formatRupiah(totalSemuaPotongan), '']
+            ['', '', 'TOTAL', formatRupiah(totalIuranPeminjam), formatRupiah(totalPotonganPinjaman), formatRupiah(totalSemuaPotongan), '', formatRupiah(totalSisaHutang)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225] },
@@ -363,7 +367,8 @@ export default function LaporanPage() {
                     <th className="px-4 py-3 border-r border-slate-200 text-right">IURAN {currentMonthStr.toUpperCase()}</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">POTONGAN PINJAMAN</th>
                     <th className="px-4 py-3 border-r border-slate-200 text-right">TOTAL POTONGAN</th>
-                    <th className="px-4 py-3 text-center">POTONGAN KE</th>
+                    <th className="px-4 py-3 border-r border-slate-200 text-center">POTONGAN KE</th>
+                    <th className="px-4 py-3 text-right">SISA HUTANG</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white">
@@ -375,7 +380,8 @@ export default function LaporanPage() {
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(r.iuran)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(r.potonganPinjaman)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right font-semibold">{formatRupiah(r.totalPotongan)}</td>
-                      <td className="px-4 py-3 text-center text-slate-500">KE {r.potonganKe}</td>
+                      <td className="px-4 py-3 border-r border-slate-200 text-center text-slate-500">KE {r.potonganKe}</td>
+                      <td className="px-4 py-3 text-right font-bold text-red-600">{formatRupiah(r.sisaHutang)}</td>
                     </tr>
                   ))}
                   {daftarPeminjam.length > 0 && (
@@ -384,12 +390,13 @@ export default function LaporanPage() {
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalIuranPeminjam)}</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right">{formatRupiah(totalPotonganPinjaman)}</td>
                       <td className="px-4 py-3 border-r border-slate-300 text-right text-emerald-700">{formatRupiah(totalSemuaPotongan)}</td>
-                      <td className="px-4 py-3"></td>
+                      <td className="px-4 py-3 border-r border-slate-300"></td>
+                      <td className="px-4 py-3 text-right text-red-700">{formatRupiah(totalSisaHutang)}</td>
                     </tr>
                   )}
                   {daftarPeminjam.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500">Tidak ada peminjam aktif.</td>
+                      <td colSpan={8} className="px-4 py-8 text-center text-slate-500">Tidak ada peminjam aktif.</td>
                     </tr>
                   )}
                 </tbody>
