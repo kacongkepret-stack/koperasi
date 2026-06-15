@@ -184,9 +184,12 @@ import { useState } from "react"
 
 function MemberDashboard() {
   const { user } = useAuthStore()
-  const { simpananWajibBulanan } = useSettingsStore()
+  const { simpananWajibBulanan, bungaPinjaman, historicalLaba } = useSettingsStore()
   const { loans } = useLoanStore()
   const { members, changePassword } = useMemberStore()
+  
+  const currentMonthStr = new Date().toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
+  const BULAN_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember"]
   
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [newPassword, setNewPassword] = useState("")
@@ -196,8 +199,20 @@ function MemberDashboard() {
   const myMemberData = members.find(m => m.nik === user?.nik)
 
   // Global Koperasi Stats
-  const globalSimpanan = members.reduce((acc, m) => acc + (m.saldo_pokok + m.saldo_wajib), 0)
+  const globalSimpanan = members.reduce((acc, m) => acc + (m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)), 0)
   const globalPinjaman = loans.filter(l => l.status === "Approved").reduce((acc, l) => acc + l.nominal, 0)
+
+  // Calculate Estimasi SHU
+  const activeLoans = loans.filter(l => l.status === "Approved")
+  const totalPendapatanBungaBulanIni = activeLoans.reduce((a, l) => a + (l.nominal * (bungaPinjaman / 100)), 0)
+  const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
+    if (bulan === currentMonthStr) return acc + totalPendapatanBungaBulanIni
+    return acc + (historicalLaba?.[bulan] || 0)
+  }, 0)
+  const shuBersih = totalLabaTahunan * 0.95
+  
+  const myTotalTabungan = myMemberData ? (myMemberData.saldo_pokok + myMemberData.saldo_wajib + (myMemberData.saldo_shu || 0)) : 0
+  const myEstimasiSHU = globalSimpanan > 0 ? (myTotalTabungan / globalSimpanan) * shuBersih : 0
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -219,11 +234,11 @@ function MemberDashboard() {
           <CardHeader className="border-b border-slate-100/50 bg-slate-50/30 py-3">
             <CardTitle className="text-sm font-semibold flex items-center justify-between">
               <span className="flex items-center gap-2"><Wallet size={16} className="text-emerald-600" /> Total Simpanan Saya</span>
-              <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px]">Est. SHU: {formatRupiah(1250000)}</span>
+              <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px]">Est. SHU: {formatRupiah(myEstimasiSHU)}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5">
-            <div className="text-3xl font-bold text-slate-900 tracking-tight">{formatRupiah((myMemberData?.saldo_pokok || 0) + (myMemberData?.saldo_wajib || 0))}</div>
+            <div className="text-3xl font-bold text-slate-900 tracking-tight">{formatRupiah(myTotalTabungan)}</div>
             <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100 text-xs">
               <div>
                 <span className="text-slate-500 block mb-0.5">Simpanan Pokok</span>
@@ -233,6 +248,11 @@ function MemberDashboard() {
               <div>
                 <span className="text-slate-500 block mb-0.5">Simpanan Wajib</span>
                 <span className="font-semibold text-slate-900">{formatRupiah(myMemberData?.saldo_wajib || 0)}</span>
+              </div>
+              <div className="w-px h-6 bg-slate-200"></div>
+              <div>
+                <span className="text-slate-500 block mb-0.5">Saldo SHU</span>
+                <span className="font-semibold text-slate-900">{formatRupiah(myMemberData?.saldo_shu || 0)}</span>
               </div>
             </div>
           </CardContent>
