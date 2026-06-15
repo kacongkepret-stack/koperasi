@@ -234,7 +234,7 @@ function MemberDashboard() {
           <CardHeader className="border-b border-slate-100/50 bg-slate-50/30 py-3">
             <CardTitle className="text-sm font-semibold flex items-center justify-between">
               <span className="flex items-center gap-2"><Wallet size={16} className="text-emerald-600" /> Total Simpanan Saya</span>
-              <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px]">Est. SHU: {formatRupiah(myEstimasiSHU)}</span>
+              <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px]">Est. SHU {new Date().getFullYear()}: {formatRupiah(myEstimasiSHU)}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5">
@@ -251,8 +251,8 @@ function MemberDashboard() {
               </div>
               <div className="w-px h-6 bg-slate-200"></div>
               <div>
-                <span className="text-slate-500 block mb-0.5">Saldo SHU</span>
-                <span className="font-semibold text-slate-900">{formatRupiah(myMemberData?.saldo_shu || 0)}</span>
+                <span className="text-slate-500 block mb-0.5">Total Aset Keseluruhan</span>
+                <span className="font-bold text-emerald-700">{formatRupiah(myTotalTabungan + myEstimasiSHU)}</span>
               </div>
             </div>
           </CardContent>
