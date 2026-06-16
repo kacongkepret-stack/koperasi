@@ -35,7 +35,9 @@ export default function Dashboard() {
 
   const simpananTerkumpul = members.reduce((a, b) => a + b.saldo_pokok + b.saldo_wajib, 0)
   const pinjamanAktif = activeLoans.reduce((a, l) => a + l.nominal, 0)
-  const totalAset = simpananTerkumpul + pinjamanAktif + saldoAwalSistem + shuBersih
+  // Total Aset = Modal (Saldo Awal + SHU) + Kewajiban (Simpanan Terkumpul)
+  // Atau secara Aktiva = Saldo Kas (Uang Brankas) + Piutang (Pinjaman Aktif)
+  const totalAset = simpananTerkumpul + saldoAwalSistem + shuBersih
   
   const totalAnggota = members.filter(m => m.status === "Aktif").length
   const recentLoansList = [...loans].sort((a,b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 5)
