@@ -632,30 +632,32 @@ export default function LaporanPage() {
                     </tr>
                   ))}
                   {members.length > 0 && (
-                    <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800">
-                      <td colSpan={3} className="px-3 py-2.5 border-r border-slate-300 text-center">Total</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-600 font-medium">{formatRupiah(shuBersih)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50 font-bold">{formatRupiah(totalSaldoSHU + shuBersih)}</td>
-                      <td className="px-3 py-2.5 text-right text-emerald-800 bg-emerald-100/50 font-bold">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
-                    </tr>
-                    <tr className="bg-slate-50 border-b border-slate-300 font-bold text-slate-600">
-                      <td colSpan={3} className="px-4 py-2.5 border-r border-slate-300 text-center text-xs">Modal Awal Perusahaan</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
-                      <td className="px-3 py-2.5 text-right text-emerald-700 bg-emerald-50 font-bold">{formatRupiah(saldoAwalSistem)}</td>
-                    </tr>
-                    <tr className="bg-emerald-600 text-white font-black">
-                      <td colSpan={3} className="px-4 py-3 border-r border-emerald-500/30 text-center uppercase tracking-wide">Grand Total Aset Koperasi</td>
-                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
-                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
-                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
-                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
-                      <td className="px-3 py-3 text-right text-lg">{formatRupiah(totalSaldoKeseluruhan + shuBersih + saldoAwalSistem)}</td>
-                    </tr>
+                    <>
+                      <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800">
+                        <td colSpan={3} className="px-3 py-2.5 border-r border-slate-300 text-center">Total</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU)}</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-600 font-medium">{formatRupiah(shuBersih)}</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-700 bg-blue-50/30 font-bold">{formatRupiah(totalSaldoSHU + shuBersih)}</td>
+                        <td className="px-3 py-2.5 text-right text-emerald-800 bg-emerald-100/50 font-bold">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
+                      </tr>
+                      <tr className="bg-slate-50 border-b border-slate-300 font-bold text-slate-600">
+                        <td colSpan={3} className="px-4 py-2.5 border-r border-slate-300 text-center text-xs">Modal Awal Perusahaan</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                        <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                        <td className="px-3 py-2.5 text-right text-emerald-700 bg-emerald-50 font-bold">{formatRupiah(saldoAwalSistem)}</td>
+                      </tr>
+                      <tr className="bg-emerald-600 text-white font-black">
+                        <td colSpan={3} className="px-4 py-3 border-r border-emerald-500/30 text-center uppercase tracking-wide">Grand Total Aset Koperasi</td>
+                        <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                        <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                        <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                        <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                        <td className="px-3 py-3 text-right text-lg">{formatRupiah(totalSaldoKeseluruhan + shuBersih + saldoAwalSistem)}</td>
+                      </tr>
+                    </>
                   )}
                 </tbody>
               </table>
