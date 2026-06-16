@@ -72,7 +72,7 @@ export default function LaporanPage() {
         iuran: simpananWajibBulanan,
         potonganPinjaman: potonganPinjaman,
         totalPotongan: simpananWajibBulanan + potonganPinjaman,
-        potonganKe: loan.cicilan_ke,
+        potonganKe: loan.cicilan_ke + 1,
         sisaHutang: pokokPerBulan * (loan.tenor - loan.cicilan_ke)
       }
     })
@@ -471,8 +471,12 @@ export default function LaporanPage() {
           
           {/* TAB 1: PEMINJAM */}
           {activeTab === "peminjam" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left border-collapse">
+            <div className="overflow-x-auto p-4">
+              <div className="mb-4">
+                <h3 className="font-bold text-slate-800">Preview Potongan HRD Bulan Depan</h3>
+                <p className="text-xs text-slate-500">Tabel ini adalah data <span className="font-bold text-emerald-600">LIVE (Saat Ini)</span> untuk panduan HRD melakukan pemotongan gaji selanjutnya. Tidak dipengaruhi oleh filter bulan.</p>
+              </div>
+              <table className="w-full text-xs text-left border-collapse">
                 <thead className="bg-slate-50 text-slate-700 text-xs font-bold border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3 border-r border-slate-200 text-center">NO</th>
