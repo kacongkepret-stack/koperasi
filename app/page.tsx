@@ -15,7 +15,7 @@ export default function Dashboard() {
   const { loans } = useLoanStore()
   const { members } = useMemberStore()
   const { transactions } = useTransactionStore()
-  const { companyName, saldoAwalSistem, bungaPinjaman, historicalLaba } = useSettingsStore()
+  const { companyName, saldoAwalSistem, bungaPinjaman, historicalLaba, modalPerusahaan } = useSettingsStore()
 
   if (user?.role === "member") {
     return <MemberDashboard />
@@ -37,7 +37,7 @@ export default function Dashboard() {
   const pinjamanAktif = activeLoans.reduce((a, l) => a + l.nominal, 0)
   // Total Aset = Modal (Saldo Awal + SHU) + Kewajiban (Simpanan Terkumpul)
   // Atau secara Aktiva = Saldo Kas (Uang Brankas) + Piutang (Pinjaman Aktif)
-  const totalAset = simpananTerkumpul + saldoAwalSistem + shuBersih
+  const totalAset = simpananTerkumpul + (modalPerusahaan || 0) + shuBersih
   
   const totalAnggota = members.filter(m => m.status === "Aktif").length
   const recentLoansList = [...loans].sort((a,b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 5)

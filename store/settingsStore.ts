@@ -17,6 +17,7 @@ interface SettingsState {
   simpananWajibBulanan: number
   bungaPinjaman: number
   saldoAwalSistem: number
+  modalPerusahaan: number
   setCompanyName: (name: string) => Promise<void>
   setCompanyLogo: (logo: string) => Promise<void>
   addDepartment: (dept: string) => void
@@ -25,6 +26,7 @@ interface SettingsState {
   setSimpananWajibBulanan: (nominal: number) => Promise<void>
   setBungaPinjaman: (nominal: number) => Promise<void>
   setSaldoAwalSistem: (nominal: number) => Promise<void>
+  setModalPerusahaan: (nominal: number) => void
   lastPostedSimpananMonth: string
   lastPostedCicilanMonth: string
   setLastPostedSimpananMonth: (month: string) => void
@@ -42,6 +44,7 @@ export const useSettingsStore = create<SettingsState>()(
       simpananWajibBulanan: 100000,
       bungaPinjaman: 1.0,
       saldoAwalSistem: 0,
+      modalPerusahaan: 0,
       lastPostedSimpananMonth: "",
       lastPostedCicilanMonth: "",
       departments: ["Front Office", "Housekeeping", "HRD", "Engineering", "Finance", "F&B Service", "F&B Product", "GM", "Mice", "Security", "Sales"],
@@ -72,6 +75,7 @@ export const useSettingsStore = create<SettingsState>()(
     if (error) console.error("Error updating saldo awal sistem:", error)
     set({ saldoAwalSistem: nominal })
   },
+  setModalPerusahaan: (nominal) => set({ modalPerusahaan: nominal }),
   setHistoricalLaba: async (month, nominal) => {
     const currentState = get().historicalLaba
     const newState = { ...currentState, [month]: nominal }
@@ -106,7 +110,9 @@ export const useSettingsStore = create<SettingsState>()(
       departments: state.departments, 
       expenses: state.expenses,
       lastPostedSimpananMonth: state.lastPostedSimpananMonth,
-      lastPostedCicilanMonth: state.lastPostedCicilanMonth
+      lastPostedCicilanMonth: state.lastPostedCicilanMonth,
+      modalPerusahaan: state.modalPerusahaan
     }),
   }
-))
+)
+)

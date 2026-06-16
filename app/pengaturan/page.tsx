@@ -17,8 +17,8 @@ export default function PengaturanPage() {
   const { processAllInstallments, loans } = useLoanStore()
   const { processAllSimpananWajib, members } = useMemberStore()
   const { 
-    companyName, simpananWajibBulanan, bungaPinjaman, saldoAwalSistem, 
-    setCompanyName, setSimpananWajibBulanan, setBungaPinjaman, setSaldoAwalSistem, 
+    companyName, simpananWajibBulanan, bungaPinjaman, saldoAwalSistem, modalPerusahaan,
+    setCompanyName, setSimpananWajibBulanan, setBungaPinjaman, setSaldoAwalSistem, setModalPerusahaan,
     departments, addDepartment, removeDepartment, expenses, addExpense, 
     lastPostedSimpananMonth, lastPostedCicilanMonth, setLastPostedSimpananMonth, setLastPostedCicilanMonth,
     historicalLaba, setHistoricalLaba 
@@ -30,6 +30,7 @@ export default function PengaturanPage() {
   const [tempWajib, setTempWajib] = useState(simpananWajibBulanan)
   const [tempBunga, setTempBunga] = useState(bungaPinjaman)
   const [tempAwal, setTempAwal] = useState(saldoAwalSistem)
+  const [tempModal, setTempModal] = useState(modalPerusahaan || 0)
   const [newDept, setNewDept] = useState("")
   const [expenseForm, setExpenseForm] = useState({ keterangan: "", nominal: 0 })
   const [isSaved, setIsSaved] = useState(false)
@@ -49,6 +50,7 @@ export default function PengaturanPage() {
     setSimpananWajibBulanan(tempWajib)
     setBungaPinjaman(tempBunga)
     setSaldoAwalSistem(tempAwal)
+    setModalPerusahaan(tempModal)
     setIsSaved(true)
     setTimeout(() => setIsSaved(false), 2000)
   }
@@ -190,13 +192,25 @@ export default function PengaturanPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Modal Awal / Saldo Sebelum Pakai Aplikasi (Rp)</label>
+                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Sisa Uang Tunai Bulan Lalu (Rp)</label>
                     <input 
                       type="number" 
                       value={tempAwal}
                       onChange={e => setTempAwal(Number(e.target.value))}
                       className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500" 
                     />
+                    <p className="text-[10px] text-slate-500 mt-1">Sisa kas fisik sebelum menggunakan aplikasi ini.</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Suntikan Modal Perusahaan (Rp)</label>
+                    <input 
+                      type="number" 
+                      value={tempModal}
+                      onChange={e => setTempModal(Number(e.target.value))}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500" 
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Tambahan dana dari perusahaan (jika ada).</p>
                   </div>
                   <div className="pt-2">
                     <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded-md text-xs font-semibold hover:bg-emerald-700 flex items-center gap-2">

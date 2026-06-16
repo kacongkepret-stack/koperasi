@@ -25,7 +25,7 @@ export default function LaporanPage() {
   const { members } = useMemberStore()
   const { loans } = useLoanStore()
   const { transactions } = useTransactionStore()
-  const { companyName, companyLogo, simpananWajibBulanan, bungaPinjaman, saldoAwalSistem, historicalLaba } = useSettingsStore()
+  const { companyName, companyLogo, simpananWajibBulanan, bungaPinjaman, saldoAwalSistem, modalPerusahaan, historicalLaba } = useSettingsStore()
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -244,7 +244,7 @@ export default function LaporanPage() {
       "SHU LAMA": "-",
       "EST. SHU BARU": "-",
       "TOTAL SHU": "-",
-      "TOTAL ASET": saldoAwalSistem
+      "TOTAL ASET": modalPerusahaan || 0
     } as any)
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "GRAND TOTAL ASET", 
@@ -252,7 +252,7 @@ export default function LaporanPage() {
       "SHU LAMA": "-",
       "EST. SHU BARU": "-",
       "TOTAL SHU": "-",
-      "TOTAL ASET": totalSaldoKeseluruhan + shuBersih + saldoAwalSistem
+      "TOTAL ASET": totalSaldoKeseluruhan + shuBersih + (modalPerusahaan || 0)
     } as any)
     const ws2 = XLSX.utils.json_to_sheet(ws2Data)
     XLSX.utils.book_append_sheet(wb, ws2, "Data Tabungan")
@@ -334,8 +334,8 @@ export default function LaporanPage() {
               ]
             }),
             ['', '', 'TOTAL TABUNGAN ANGGOTA', formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)],
-            ['', '', 'MODAL AWAL PERUSAHAAN', '-', '-', '-', '-', formatRupiah(saldoAwalSistem)],
-            ['', '', 'GRAND TOTAL ASET', '-', '-', '-', '-', formatRupiah(totalSaldoKeseluruhan + shuBersih + saldoAwalSistem)]
+            ['', '', 'MODAL AWAL PERUSAHAAN', '-', '-', '-', '-', formatRupiah(modalPerusahaan || 0)],
+            ['', '', 'GRAND TOTAL ASET', '-', '-', '-', '-', formatRupiah(totalSaldoKeseluruhan + shuBersih + (modalPerusahaan || 0))]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225], fontSize: 8 },
@@ -647,7 +647,7 @@ export default function LaporanPage() {
                         <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
                         <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
                         <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
-                        <td className="px-3 py-2.5 text-right text-emerald-700 bg-emerald-50 font-bold">{formatRupiah(saldoAwalSistem)}</td>
+                        <td className="px-3 py-2.5 text-right text-emerald-700 bg-emerald-50 font-bold">{formatRupiah(modalPerusahaan || 0)}</td>
                       </tr>
                       <tr className="bg-emerald-600 text-white font-black">
                         <td colSpan={3} className="px-4 py-3 border-r border-emerald-500/30 text-center uppercase tracking-wide">Grand Total Aset Koperasi</td>
@@ -655,7 +655,7 @@ export default function LaporanPage() {
                         <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
                         <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
                         <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
-                        <td className="px-3 py-3 text-right text-lg">{formatRupiah(totalSaldoKeseluruhan + shuBersih + saldoAwalSistem)}</td>
+                        <td className="px-3 py-3 text-right text-lg">{formatRupiah(totalSaldoKeseluruhan + shuBersih + (modalPerusahaan || 0))}</td>
                       </tr>
                     </>
                   )}
