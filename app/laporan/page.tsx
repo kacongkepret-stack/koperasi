@@ -50,8 +50,12 @@ export default function LaporanPage() {
     return d < startOfMonth
   })
 
-  const totalPemasukanLalu = pastTransactions.filter(t => t.tipe !== "PENCAIRAN_PINJAMAN").reduce((a, b) => a + b.nominal, 0)
-  const totalPengeluaranLalu = pastTransactions.filter(t => t.tipe === "PENCAIRAN_PINJAMAN").reduce((a, b) => a + b.nominal, 0)
+  const totalPemasukanLalu = pastTransactions
+    .filter(t => t.tipe !== "PENCAIRAN_PINJAMAN" && t.tipe !== "PENCAIRAN_SHU")
+    .reduce((a, b) => a + b.nominal, 0)
+  const totalPengeluaranLalu = pastTransactions
+    .filter(t => t.tipe === "PENCAIRAN_PINJAMAN" || t.tipe === "PENCAIRAN_SHU")
+    .reduce((a, b) => a + b.nominal, 0)
   const totalSisaSaldoAwal = saldoAwalSistem + totalPemasukanLalu - totalPengeluaranLalu
 
   // ----------------------------------------------------
@@ -307,13 +311,13 @@ export default function LaporanPage() {
           head: [['NO', 'NAMA', 'DEPT', 'TABUNGAN', 'SHU LAMA', 'EST. SHU', 'TOTAL SHU', 'TOTAL ASET']],
           body: [
             ...members.map((m, i) => {
-              const estimasiSHU = totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0;
-              const totalTabungan = m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0);
+              const estimasiSHU = members.length > 0 ? shuBersih / members.length : 0;
+              const totalTabungan = m.saldo_pokok + m.saldo_wajib;
               return [
-                i+1, m.nama, m.departemen || "-", formatRupiah(totalTabungan), formatRupiah(m.saldo_shu || 0), formatRupiah(estimasiSHU), formatRupiah((m.saldo_shu || 0) + estimasiSHU), formatRupiah(totalTabungan + estimasiSHU)
+                i+1, m.nama, m.departemen || "-", formatRupiah(totalTabungan), formatRupiah(m.saldo_shu || 0), formatRupiah(estimasiSHU), formatRupiah((m.saldo_shu || 0) + estimasiSHU), formatRupiah(totalTabungan + (m.saldo_shu || 0) + estimasiSHU)
               ]
             }),
-            ['', '', 'TOTAL', formatRupiah(totalSaldoKeseluruhan), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)]
+            ['', '', 'TOTAL', formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225], fontSize: 8 },
