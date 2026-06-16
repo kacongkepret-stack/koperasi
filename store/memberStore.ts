@@ -65,10 +65,6 @@ export const useMemberStore = create<MemberState>((set, get) => ({
   },
   processAllSimpananWajib: async (nominalBulanan) => {
     const state = get()
-    // Perform bulk update on Supabase (using rpc or individual updates)
-    // For simplicity without RPC, we can just fetch and update, but ideally it should be an RPC.
-    // For now, update local state to reflect, and in a real app use an edge function/rpc for mass update.
-    
     const activeMembers = state.members.filter(m => m.status === 'Aktif')
     
     // We update local state first for immediate UI response
@@ -78,15 +74,20 @@ export const useMemberStore = create<MemberState>((set, get) => ({
       )
     }))
 
-    // In a production app with Supabase, we would call an RPC to increment:
-    // await supabase.rpc('increment_wajib_all', { amount: nominalBulanan })
-    
-    // Also log transaction collectively
-    await useTransactionStore.getState().addTransaction({
-      member_id: null,
-      tipe: "SIMPANAN_WAJIB",
-      nominal: nominalBulanan * activeMembers.length,
-      keterangan: `Pemotongan Kolektif Simpanan Wajib - Bulan ${new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`
-    })
+    // Process all active members to update DB and log transactions
+    await Promise.all(activeMembers.map(async (m) => {
+      // Update DB
+      await supabase.from('members')
+        .update({ saldo_wajib: m.saldo_wajib + nominalBulanan })
+        .eq('id', m.id)
+      
+      // Log individual transaction
+      await useTransactionStore.getState().addTransaction({
+        member_id: m.id,
+        tipe: "SIMPANAN_WAJIB",
+        nominal: nominalBulanan,
+        keterangan: `Simpanan Wajib Bulanan`
+      })
+    }))
   }
 }))

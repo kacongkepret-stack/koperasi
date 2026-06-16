@@ -191,28 +191,7 @@ export const useLoanStore = create<LoanState>((set, get) => ({
     const activeLoans = state.loans.filter(l => l.status === "Approved" && l.cicilan_ke < l.tenor)
     const globalInterestRate = useSettingsStore.getState().bungaPinjaman
     
-    // 1. Process SIMPANAN WAJIB for all members
-    const simpananWajibBulanan = useSettingsStore.getState().simpananWajibBulanan || 100000
-    const { data: members } = await supabase.from('members').select('id, nama, saldo_wajib')
-    
-    if (members) {
-      await Promise.all(members.map(async (m) => {
-        // Update DB
-        await supabase.from('members')
-          .update({ saldo_wajib: (m.saldo_wajib || 0) + simpananWajibBulanan })
-          .eq('id', m.id)
-        
-        // Log transaction
-        await useTransactionStore.getState().addTransaction({
-          member_id: m.id,
-          tipe: "SIMPANAN_WAJIB",
-          nominal: simpananWajibBulanan,
-          keterangan: `Simpanan Wajib ${m.nama}`
-        })
-      }))
-    }
-
-    // 2. Process INSTALLMENTS
+    // Process INSTALLMENTS
     await Promise.all(activeLoans.map(async (l) => {
       const rate = l.bunga_rate !== null && l.bunga_rate !== undefined ? l.bunga_rate : globalInterestRate
       const pokok = l.nominal / l.tenor
