@@ -27,9 +27,11 @@ export default function Dashboard() {
   
   const activeLoans = loans.filter(l => l.status === "Approved")
   const totalPendapatanBungaBulanIni = activeLoans.reduce((a, l) => a + (l.nominal * (bungaPinjaman / 100)), 0)
+  const currentYear = new Date().getFullYear()
   const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
     if (bulan === currentMonthName) return acc + totalPendapatanBungaBulanIni
-    return acc + (historicalLaba?.[bulan] || 0)
+    const key = `${currentYear}-${bulan}`
+    return acc + (historicalLaba?.[key] || 0)
   }, 0)
   const shuBersih = totalLabaTahunan * 0.95
 
@@ -221,9 +223,11 @@ function MemberDashboard() {
   // Calculate Estimasi SHU
   const activeLoans = loans.filter(l => l.status === "Approved")
   const totalPendapatanBungaBulanIni = activeLoans.reduce((a, l) => a + (l.nominal * (bungaPinjaman / 100)), 0)
+  const currentYear = new Date().getFullYear()
   const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
     if (bulan === currentMonthName) return acc + totalPendapatanBungaBulanIni
-    return acc + (historicalLaba?.[bulan] || 0)
+    const key = `${currentYear}-${bulan}`
+    return acc + (historicalLaba?.[key] || 0)
   }, 0)
   const shuBersih = totalLabaTahunan * 0.95
   

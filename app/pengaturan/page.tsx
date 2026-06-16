@@ -386,8 +386,8 @@ export default function PengaturanPage() {
                       <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">{bulan}</label>
                       <input 
                         type="number" 
-                        value={historicalLaba[bulan] || ""}
-                        onChange={(e) => setHistoricalLaba(bulan, Number(e.target.value))}
+                        value={historicalLaba[`${new Date().getFullYear()}-${bulan}`] || ""}
+                        onChange={(e) => setHistoricalLaba(`${new Date().getFullYear()}-${bulan}`, Number(e.target.value))}
                         placeholder={`Laba ${bulan}`}
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500" 
                       />
