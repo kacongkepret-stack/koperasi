@@ -85,7 +85,6 @@ export default function SimpananPage() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-3">
-            <div className="space-y-3">
               {transactions.filter(t => t.tipe === 'SIMPANAN_WAJIB').length === 0 ? (
                 <div className="text-center py-8 text-slate-500 text-sm">Belum ada riwayat tercatat.</div>
               ) : transactions.filter(t => t.tipe === 'SIMPANAN_WAJIB')
