@@ -231,12 +231,28 @@ export default function LaporanPage() {
       }
     })
     ws2Data.push({
-      "NO": "" as any, "NAMA": "", "DEPT": "Total", 
+      "NO": "" as any, "NAMA": "", "DEPT": "Total Tabungan Anggota", 
       "TOTAL TABUNGAN": totalSaldoKeseluruhan - totalSaldoSHU,
       "SHU LAMA": totalSaldoSHU,
       "EST. SHU BARU": shuBersih,
       "TOTAL SHU": totalSaldoSHU + shuBersih,
       "TOTAL ASET": totalSaldoKeseluruhan + shuBersih
+    } as any)
+    ws2Data.push({
+      "NO": "" as any, "NAMA": "", "DEPT": "Modal Awal Perusahaan", 
+      "TOTAL TABUNGAN": "-",
+      "SHU LAMA": "-",
+      "EST. SHU BARU": "-",
+      "TOTAL SHU": "-",
+      "TOTAL ASET": saldoAwalSistem
+    } as any)
+    ws2Data.push({
+      "NO": "" as any, "NAMA": "", "DEPT": "GRAND TOTAL ASET", 
+      "TOTAL TABUNGAN": "-",
+      "SHU LAMA": "-",
+      "EST. SHU BARU": "-",
+      "TOTAL SHU": "-",
+      "TOTAL ASET": totalSaldoKeseluruhan + shuBersih + saldoAwalSistem
     } as any)
     const ws2 = XLSX.utils.json_to_sheet(ws2Data)
     XLSX.utils.book_append_sheet(wb, ws2, "Data Tabungan")
@@ -317,7 +333,9 @@ export default function LaporanPage() {
                 i+1, m.nama, m.departemen || "-", formatRupiah(totalTabungan), formatRupiah(m.saldo_shu || 0), formatRupiah(estimasiSHU), formatRupiah((m.saldo_shu || 0) + estimasiSHU), formatRupiah(totalTabungan + (m.saldo_shu || 0) + estimasiSHU)
               ]
             }),
-            ['', '', 'TOTAL', formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)]
+            ['', '', 'TOTAL TABUNGAN ANGGOTA', formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)],
+            ['', '', 'MODAL AWAL PERUSAHAAN', '-', '-', '-', '-', formatRupiah(saldoAwalSistem)],
+            ['', '', 'GRAND TOTAL ASET', '-', '-', '-', '-', formatRupiah(totalSaldoKeseluruhan + shuBersih + saldoAwalSistem)]
           ],
           theme: 'grid',
           headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], lineWidth: 0.1, lineColor: [203, 213, 225], fontSize: 8 },
@@ -621,6 +639,22 @@ export default function LaporanPage() {
                       <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-600 font-medium">{formatRupiah(shuBersih)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50 font-bold">{formatRupiah(totalSaldoSHU + shuBersih)}</td>
                       <td className="px-3 py-2.5 text-right text-emerald-800 bg-emerald-100/50 font-bold">{formatRupiah(totalSaldoKeseluruhan + shuBersih)}</td>
+                    </tr>
+                    <tr className="bg-slate-50 border-b border-slate-300 font-bold text-slate-600">
+                      <td colSpan={3} className="px-4 py-2.5 border-r border-slate-300 text-center text-xs">Modal Awal Perusahaan</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-center">-</td>
+                      <td className="px-3 py-2.5 text-right text-emerald-700 bg-emerald-50 font-bold">{formatRupiah(saldoAwalSistem)}</td>
+                    </tr>
+                    <tr className="bg-emerald-600 text-white font-black">
+                      <td colSpan={3} className="px-4 py-3 border-r border-emerald-500/30 text-center uppercase tracking-wide">Grand Total Aset Koperasi</td>
+                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                      <td className="px-3 py-3 border-r border-emerald-500/30 text-center text-emerald-200">-</td>
+                      <td className="px-3 py-3 text-right text-lg">{formatRupiah(totalSaldoKeseluruhan + shuBersih + saldoAwalSistem)}</td>
                     </tr>
                   )}
                 </tbody>
