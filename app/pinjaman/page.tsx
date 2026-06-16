@@ -382,24 +382,22 @@ export default function PinjamanPage() {
                 </div>
               )}
 
-              {/* Slider Nominal */}
+              {/* Input Nominal Manual */}
               <div className="space-y-3">
                 <div className="flex justify-between items-end">
-                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Nominal</label>
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Nominal Pinjaman</label>
                   <span className="text-lg font-bold text-emerald-600">{formatRupiah(amount)}</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="500000" 
-                  max="6000000" 
-                  step="100000"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-emerald-600"
-                />
-                <div className="flex justify-between text-[10px] font-medium text-slate-400">
-                  <span>Rp 500rb</span>
-                  <span>Maks Rp 6 Jt</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-2 rounded-md border border-slate-200">Rp</span>
+                  <input 
+                    type="number" 
+                    min="0"
+                    value={amount}
+                    onChange={handleAmountChange}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500" 
+                    placeholder="Masukkan nominal bebas"
+                  />
                 </div>
               </div>
 
@@ -427,12 +425,24 @@ export default function PinjamanPage() {
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3 relative overflow-hidden">
                 <div className="flex justify-between items-center relative z-10">
                   <span className="text-xs text-slate-500 font-medium">Cicilan per Bulan</span>
-                  <span className="text-base font-bold text-slate-900">{formatRupiah(monthlyInstallment())}</span>
+                  <span className="text-base font-bold text-slate-900">
+                    {formatRupiah(
+                      isZeroInterest 
+                      ? amount / tenure 
+                      : (amount + (amount * (bungaPinjaman / 100) * tenure)) / tenure
+                    )}
+                  </span>
                 </div>
                 <div className="h-px w-full bg-slate-200 relative z-10"></div>
                 <div className="flex justify-between items-center relative z-10">
                   <span className="text-xs text-slate-500 font-medium">Total Pengembalian</span>
-                  <span className="text-xs font-bold text-emerald-600">{formatRupiah(totalPayment())}</span>
+                  <span className="text-xs font-bold text-emerald-600">
+                    {formatRupiah(
+                      isZeroInterest 
+                      ? amount 
+                      : amount + (amount * (bungaPinjaman / 100) * tenure)
+                    )}
+                  </span>
                 </div>
               </div>
 
