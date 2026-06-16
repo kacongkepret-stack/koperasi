@@ -26,7 +26,7 @@ interface SettingsState {
   setSimpananWajibBulanan: (nominal: number) => Promise<void>
   setBungaPinjaman: (nominal: number) => Promise<void>
   setSaldoAwalSistem: (nominal: number) => Promise<void>
-  setModalPerusahaan: (nominal: number) => void
+  setModalPerusahaan: (nominal: number) => Promise<void>
   lastPostedSimpananMonth: string
   lastPostedCicilanMonth: string
   setLastPostedSimpananMonth: (month: string) => void
@@ -75,7 +75,11 @@ export const useSettingsStore = create<SettingsState>()(
     if (error) console.error("Error updating saldo awal sistem:", error)
     set({ saldoAwalSistem: nominal })
   },
-  setModalPerusahaan: (nominal) => set({ modalPerusahaan: nominal }),
+  setModalPerusahaan: async (nominal) => {
+    const { error } = await supabase.from('settings').update({ modal_perusahaan: nominal }).eq('id', 1)
+    if (error) console.error("Error updating modal perusahaan:", error)
+    set({ modalPerusahaan: nominal })
+  },
   setHistoricalLaba: async (month, nominal) => {
     const currentState = get().historicalLaba
     const newState = { ...currentState, [month]: nominal }
@@ -99,6 +103,7 @@ export const useSettingsStore = create<SettingsState>()(
         simpananWajibBulanan: Number(data.simpanan_wajib_bulanan),
         bungaPinjaman: data.bunga_pinjaman !== null && data.bunga_pinjaman !== undefined ? Number(data.bunga_pinjaman) : 1.0,
         saldoAwalSistem: data.saldo_awal_sistem ? Number(data.saldo_awal_sistem) : 0,
+        modalPerusahaan: data.modal_perusahaan ? Number(data.modal_perusahaan) : 0,
         historicalLaba: data.historical_laba || {}
       })
     }
