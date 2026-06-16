@@ -216,14 +216,14 @@ export default function LaporanPage() {
     const ws1 = XLSX.utils.json_to_sheet(ws1Data)
     XLSX.utils.book_append_sheet(wb, ws1, "Daftar Peminjam")
 
-    // 2. Sheet Data Tabungan
+    // 2. Sheet Data Simpanan Wajib & SHU
     const ws2Data = members.map((m, i) => {
       const estimasiSHU = members.length > 0 ? shuBersih / members.length : 0;
       return {
         "NO": i + 1,
         "NAMA": m.nama,
         "DEPT": m.departemen,
-        "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib,
+        "SIMPANAN WAJIB": m.saldo_pokok + m.saldo_wajib,
         "SHU LAMA": m.saldo_shu || 0,
         "EST. SHU BARU": estimasiSHU,
         "TOTAL SHU": (m.saldo_shu || 0) + estimasiSHU,
@@ -231,8 +231,8 @@ export default function LaporanPage() {
       }
     })
     ws2Data.push({
-      "NO": "" as any, "NAMA": "", "DEPT": "Total Tabungan Anggota", 
-      "TOTAL TABUNGAN": totalSaldoKeseluruhan - totalSaldoSHU,
+      "NO": "" as any, "NAMA": "", "DEPT": "Total Simpanan Wajib", 
+      "SIMPANAN WAJIB": totalSaldoKeseluruhan - totalSaldoSHU,
       "SHU LAMA": totalSaldoSHU,
       "EST. SHU BARU": shuBersih,
       "TOTAL SHU": totalSaldoSHU + shuBersih,
@@ -240,7 +240,7 @@ export default function LaporanPage() {
     } as any)
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "Modal Awal Perusahaan", 
-      "TOTAL TABUNGAN": "-",
+      "SIMPANAN WAJIB": "-",
       "SHU LAMA": "-",
       "EST. SHU BARU": "-",
       "TOTAL SHU": "-",
@@ -248,14 +248,14 @@ export default function LaporanPage() {
     } as any)
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "GRAND TOTAL ASET", 
-      "TOTAL TABUNGAN": "-",
+      "SIMPANAN WAJIB": "-",
       "SHU LAMA": "-",
       "EST. SHU BARU": "-",
       "TOTAL SHU": "-",
       "TOTAL ASET": totalSaldoKeseluruhan + shuBersih + (modalPerusahaan || 0)
     } as any)
     const ws2 = XLSX.utils.json_to_sheet(ws2Data)
-    XLSX.utils.book_append_sheet(wb, ws2, "Data Tabungan")
+    XLSX.utils.book_append_sheet(wb, ws2, "Simpanan & SHU")
 
     // 3. Sheet Rugi Laba
     const ws3Data = BULAN_NAMES.map(bulan => ({
@@ -321,10 +321,10 @@ export default function LaporanPage() {
         doc.save("Daftar_Peminjam.pdf")
       } 
       else if (activeTab === "tabungan") {
-        doc.text(`DATA TABUNGAN - PERIODE ${new Date().getFullYear()}`, 14, 34)
+        doc.text(`DATA SIMPANAN WAJIB & SHU - PERIODE ${new Date().getFullYear()}`, 14, 34)
         autoTable(doc, {
           startY: 42,
-          head: [['NO', 'NAMA', 'DEPT', 'TABUNGAN', 'SHU LAMA', 'EST. SHU', 'TOTAL SHU', 'TOTAL ASET']],
+          head: [['NO', 'NAMA', 'DEPT', 'SIMPANAN WAJIB', 'SHU LAMA', 'EST. SHU', 'TOTAL SHU', 'TOTAL ASET']],
           body: [
             ...members.map((m, i) => {
               const estimasiSHU = members.length > 0 ? shuBersih / members.length : 0;
@@ -333,7 +333,7 @@ export default function LaporanPage() {
                 i+1, m.nama, m.departemen || "-", formatRupiah(totalTabungan), formatRupiah(m.saldo_shu || 0), formatRupiah(estimasiSHU), formatRupiah((m.saldo_shu || 0) + estimasiSHU), formatRupiah(totalTabungan + (m.saldo_shu || 0) + estimasiSHU)
               ]
             }),
-            ['', '', 'TOTAL TABUNGAN ANGGOTA', formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)],
+            ['', '', 'TOTAL SIMPANAN WAJIB', formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU), formatRupiah(totalSaldoSHU), formatRupiah(shuBersih), formatRupiah(totalSaldoSHU + shuBersih), formatRupiah(totalSaldoKeseluruhan + shuBersih)],
             ['', '', 'MODAL AWAL PERUSAHAAN', '-', '-', '-', '-', formatRupiah(modalPerusahaan || 0)],
             ['', '', 'GRAND TOTAL ASET', '-', '-', '-', '-', formatRupiah(totalSaldoKeseluruhan + shuBersih + (modalPerusahaan || 0))]
           ],
@@ -342,7 +342,7 @@ export default function LaporanPage() {
           bodyStyles: { lineWidth: 0.1, lineColor: [203, 213, 225], fontSize: 8 },
           styles: { cellPadding: 2, overflow: 'linebreak' }
         })
-        doc.save("Data_Tabungan.pdf")
+        doc.save("Data_Simpanan_SHU.pdf")
       }
       else if (activeTab === "rugilaba") {
         doc.text(`LAPORAN RUGI - LABA`, 14, 34)
@@ -490,10 +490,10 @@ export default function LaporanPage() {
       <div className="bg-white/60 p-1.5 rounded-xl inline-flex flex-wrap gap-1 border border-slate-200/60 shadow-sm backdrop-blur-md w-max max-w-full overflow-x-auto mb-2">
         {[
           { id: "peminjam", label: "Daftar Potongan HRD" },
-          { id: "tabungan", label: "Data Tabungan" },
+          { id: "tabungan", label: "Simpanan Wajib & SHU" },
           { id: "rugilaba", label: "Rugi - Laba" },
           { id: "keuangan", label: "Laporan Keuangan" }
-        ].map(tab => (
+        ].map((tab) => (
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
@@ -576,7 +576,7 @@ export default function LaporanPage() {
                     <span className="bg-emerald-100 text-emerald-600 p-1.5 rounded-lg"><PieChart size={16} /></span>
                     Informasi Pembagian SHU Bulan {currentMonthStr}
                   </h3>
-                  <p className="text-[11px] mt-1.5 text-slate-500 max-w-sm leading-relaxed">SHU Bersih dibagikan proporsional berdasarkan total tabungan masing-masing anggota. Potongan Jasa Pengurus adalah 5% dari laba.</p>
+                  <p className="text-[11px] mt-1.5 text-slate-500 max-w-sm leading-relaxed">SHU Bersih dibagikan proporsional berdasarkan total simpanan masing-masing anggota. Potongan Jasa Pengurus adalah 5% dari laba.</p>
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
                   <div className="bg-slate-50 flex-1 md:flex-none px-4 py-2.5 rounded-lg border border-slate-200 text-center">
@@ -596,7 +596,7 @@ export default function LaporanPage() {
                         setMassShuForm({ dicairkan: defaultCair })
                         setIsMassShuMode(true)
                       }}
-                      className="text-[10px] w-full bg-white text-emerald-700 font-bold py-1 rounded shadow-sm hover:bg-emerald-50 transition-colors"
+                      className="w-full text-[10px] bg-white/20 hover:bg-white/30 text-white py-1 px-2 rounded font-medium transition-colors border border-white/10"
                     >
                       Bagikan Masal
                     </button>
@@ -605,13 +605,13 @@ export default function LaporanPage() {
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-[11px] text-left border-collapse">
-                <thead className="bg-slate-50 text-slate-700 text-[10px] font-bold border-b border-slate-200">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead className="bg-slate-50 text-slate-700 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
                   <tr>
-                    <th className="px-3 py-2 border-r border-slate-200 text-center">NO</th>
-                    <th className="px-3 py-2 border-r border-slate-200">NAMA</th>
-                    <th className="px-3 py-2 border-r border-slate-200">DEPT</th>
-                    <th className="px-3 py-2 border-r border-slate-200 text-right">TOTAL TABUNGAN</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-center w-12">No</th>
+                    <th className="px-3 py-2 border-r border-slate-200">Nama Anggota</th>
+                    <th className="px-3 py-2 border-r border-slate-200">Departemen</th>
+                    <th className="px-3 py-2 border-r border-slate-200 text-right">SIMPANAN WAJIB</th>
                     <th className="px-3 py-2 border-r border-slate-200 text-right">SHU LAMA</th>
                     <th className="px-3 py-2 border-r border-slate-200 text-right">EST. SHU BARU</th>
                     <th className="px-3 py-2 border-r border-slate-200 text-right">TOTAL SHU</th>
