@@ -15,11 +15,6 @@ export default function SimpananPage() {
   const { simpananWajibBulanan } = useSettingsStore()
   const { transactions, addTransaction, deleteTransaction } = useTransactionStore()
 
-  const [activeTab, setActiveTab] = useState<"pokok" | "wajib">("pokok")
-  const [isInstallmentModalOpen, setIsInstallmentModalOpen] = useState(false)
-  const [installmentAmount, setInstallmentAmount] = useState(100000)
-  const [selectedMemberId, setSelectedMemberId] = useState("")
-
   const isAdmin = user?.role === "admin"
   const myData = members.find(m => m.nik === user?.nik)
 
@@ -30,9 +25,8 @@ export default function SimpananPage() {
       const { setSaldoAwal } = useMemberStore.getState()
       const member = members.find(m => m.id === tx.member_id)
       if (member) {
-        const newPokok = tx.tipe === "SIMPANAN_POKOK" ? member.saldo_pokok - tx.nominal : member.saldo_pokok
         const newWajib = tx.tipe === "SIMPANAN_WAJIB" ? member.saldo_wajib - tx.nominal : member.saldo_wajib
-        await setSaldoAwal(member.id, newPokok, newWajib, member.saldo_shu || 0)
+        await setSaldoAwal(member.id, member.saldo_pokok, newWajib, member.saldo_shu || 0)
       }
     }
     await deleteTransaction(tx.id)
@@ -44,45 +38,15 @@ export default function SimpananPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            {isAdmin ? "Simpanan Anggota" : "Riwayat Simpanan Saya"}
+            {isAdmin ? "Riwayat Simpanan Wajib" : "Riwayat Simpanan Wajib Saya"}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {isAdmin ? "Kelola setoran pokok dan wajib semua anggota." : "Rincian potongan simpanan dari payroll Anda."}
+            {isAdmin ? "Pantau semua history potongan simpanan wajib anggota yang diproses bulanan." : "Rincian potongan simpanan wajib dari payroll Anda."}
           </p>
         </div>
-        {isAdmin && (
-          <button 
-            onClick={() => setIsInstallmentModalOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-md text-sm font-medium shadow-sm transition-colors flex items-center gap-1.5"
-          >
-            {activeTab === "pokok" ? "Input Cicilan Pokok" : "Input Simpanan Wajib"}
-          </button>
-        )}
       </div>
 
-      {/* Tabs */}
-      <div className="bg-slate-100/50 p-1.5 rounded-xl inline-flex gap-1 border border-slate-200/60">
-        <button
-          onClick={() => setActiveTab("pokok")}
-          className={`px-4 py-2 rounded-md text-xs font-semibold transition-all ${
-            activeTab === "pokok" 
-              ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
-              : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-          }`}
-        >
-          Simpanan Pokok
-        </button>
-        <button
-          onClick={() => setActiveTab("wajib")}
-          className={`px-4 py-2 rounded-md text-xs font-semibold transition-all ${
-            activeTab === "wajib" 
-              ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" 
-              : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
-          }`}
-        >
-          Simpanan Wajib
-        </button>
-      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Total Summary */}
@@ -93,12 +57,12 @@ export default function SimpananPage() {
             </div>
             <div>
               <p className="text-emerald-100 text-xs font-medium mb-1">
-                {isAdmin ? `Total Koperasi (${activeTab === 'pokok' ? 'Pokok' : 'Wajib'})` : `Saldo ${activeTab === 'pokok' ? 'Pokok' : 'Wajib'} Saya`}
+                {isAdmin ? `Total Koperasi (Simpanan Wajib)` : `Saldo Wajib Saya`}
               </p>
               <h2 className="text-3xl font-bold tracking-tight">
                 {isAdmin 
-                  ? (activeTab === 'pokok' ? formatRupiah(members.reduce((a, b) => a + b.saldo_pokok, 0)) : formatRupiah(members.reduce((a, b) => a + b.saldo_wajib, 0)))
-                  : (activeTab === 'pokok' ? formatRupiah(myData?.saldo_pokok || 0) : formatRupiah(myData?.saldo_wajib || 0))
+                  ? formatRupiah(members.reduce((a, b) => a + b.saldo_wajib, 0))
+                  : formatRupiah(myData?.saldo_wajib || 0)
                 }
               </h2>
             </div>
@@ -121,9 +85,10 @@ export default function SimpananPage() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-3">
-              {transactions.filter(t => activeTab === 'pokok' ? t.tipe === 'SIMPANAN_POKOK' : t.tipe === 'SIMPANAN_WAJIB').length === 0 ? (
+            <div className="space-y-3">
+              {transactions.filter(t => t.tipe === 'SIMPANAN_WAJIB').length === 0 ? (
                 <div className="text-center py-8 text-slate-500 text-sm">Belum ada riwayat tercatat.</div>
-              ) : transactions.filter(t => activeTab === 'pokok' ? t.tipe === 'SIMPANAN_POKOK' : t.tipe === 'SIMPANAN_WAJIB')
+              ) : transactions.filter(t => t.tipe === 'SIMPANAN_WAJIB')
                  .filter(t => isAdmin || t.member_id === myData?.id || t.member_id === null)
                  .map((t, idx, arr) => (
                 <div key={t.id} className="flex gap-3">
@@ -162,81 +127,7 @@ export default function SimpananPage() {
         </Card>
       </div>
 
-      {/* Installment Dialog */}
-      {isInstallmentModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">Catat {activeTab === "pokok" ? "Cicilan Pokok" : "Simpanan Wajib"}</h2>
-                <p className="text-[10px] text-slate-500">Input transaksi manual untuk anggota</p>
-              </div>
-              <button 
-                onClick={() => setIsInstallmentModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-100"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="p-5 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold text-slate-700 uppercase">Pilih Anggota</label>
-                <select 
-                  value={selectedMemberId}
-                  onChange={e => setSelectedMemberId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-white"
-                >
-                  <option value="">Pilih Anggota...</option>
-                  {members.filter(m => m.status === 'Aktif').map(m => (
-                    <option key={m.id} value={m.id}>{m.nik} - {m.nama}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold text-slate-700 uppercase">Nominal Setoran</label>
-                <input 
-                  type="number" 
-                  value={installmentAmount || ""}
-                  onChange={e => setInstallmentAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500" 
-                />
-              </div>
-            </div>
 
-            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
-              <button onClick={() => setIsInstallmentModalOpen(false)} className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-200">
-                Batal
-              </button>
-              <button onClick={async () => {
-                if (!selectedMemberId) return alert("Pilih anggota terlebih dahulu!")
-                if (installmentAmount <= 0) return alert("Nominal harus lebih dari 0!")
-
-                // Use the setSaldoAwal function from memberStore to also update their actual balance
-                const { setSaldoAwal } = useMemberStore.getState()
-                const member = members.find(m => m.id === selectedMemberId)
-                if (member) {
-                  const newPokok = activeTab === "pokok" ? member.saldo_pokok + installmentAmount : member.saldo_pokok
-                  const newWajib = activeTab === "wajib" ? member.saldo_wajib + installmentAmount : member.saldo_wajib
-                  await setSaldoAwal(selectedMemberId, newPokok, newWajib, member.saldo_shu || 0)
-                }
-
-                await addTransaction({
-                  member_id: selectedMemberId,
-                  tipe: activeTab === "pokok" ? "SIMPANAN_POKOK" : "SIMPANAN_WAJIB",
-                  nominal: installmentAmount,
-                  keterangan: `Input Manual ${activeTab === "pokok" ? "Setoran Pokok" : "Simpanan Wajib"}`
-                })
-                alert(`Transaksi ${activeTab === "pokok" ? "Pokok" : "Wajib"} berhasil dicatat!`)
-                setIsInstallmentModalOpen(false)
-                setSelectedMemberId("")
-              }} className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm">
-                Simpan Transaksi
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
