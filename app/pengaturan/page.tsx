@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSettingsStore } from "@/store/settingsStore"
 import { formatRupiah } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -39,6 +39,15 @@ export default function PengaturanPage() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
+
+  // Sync state when store updates (e.g. after init() fetches from Supabase)
+  useEffect(() => {
+    setTempName(companyName)
+    setTempWajib(simpananWajibBulanan)
+    setTempBunga(bungaPinjaman)
+    setTempAwal(saldoAwalSistem)
+    setTempModal(modalPerusahaan || 0)
+  }, [companyName, simpananWajibBulanan, bungaPinjaman, saldoAwalSistem, modalPerusahaan])
 
   if (user?.role !== "admin") {
     return <div className="flex h-full items-center justify-center p-10 text-slate-500">Akses ditolak. Hanya untuk Admin.</div>
