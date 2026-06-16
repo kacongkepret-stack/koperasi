@@ -192,11 +192,15 @@ export const useLoanStore = create<LoanState>((set, get) => ({
     const globalInterestRate = useSettingsStore.getState().bungaPinjaman
     
     // Process INSTALLMENTS
+    let totalBungaBulanIni = 0;
+    
     await Promise.all(activeLoans.map(async (l) => {
       const rate = l.bunga_rate !== null && l.bunga_rate !== undefined ? l.bunga_rate : globalInterestRate
       const pokok = l.nominal / l.tenor
       const bunga = l.nominal * (rate / 100)
       
+      if (bunga > 0) totalBungaBulanIni += bunga;
+
       // Update DB
       await supabase.from('loans').update({ cicilan_ke: l.cicilan_ke + 1 }).eq('id', l.id)
       
@@ -214,10 +218,16 @@ export const useLoanStore = create<LoanState>((set, get) => ({
           member_id: l.member_id,
           tipe: "PENDAPATAN_BUNGA",
           nominal: bunga,
-          keterangan: `Pendapatan Bunga ${l.nama} (Rate: ${bunga})`
+          keterangan: `Pendapatan Bunga ${l.nama} (Rate: ${bunga}%)`
         })
       }
     }))
+
+    // Save total interest collected this month to historicalLaba automatically
+    if (totalBungaBulanIni > 0) {
+      const currentMonthName = new Date().toLocaleDateString("id-ID", { month: 'long' })
+      await useSettingsStore.getState().setHistoricalLaba(currentMonthName, totalBungaBulanIni)
+    }
   },
   deleteLoan: async (id) => {
     const state = get()

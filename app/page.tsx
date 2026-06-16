@@ -22,13 +22,13 @@ export default function Dashboard() {
   }
 
   // Calculate real SHU
-  const currentMonthStr = new Date().toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
+  const currentMonthName = new Date().toLocaleDateString("id-ID", { month: 'long' })
   const BULAN_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember"]
   
   const activeLoans = loans.filter(l => l.status === "Approved")
   const totalPendapatanBungaBulanIni = activeLoans.reduce((a, l) => a + (l.nominal * (bungaPinjaman / 100)), 0)
   const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
-    if (bulan === currentMonthStr) return acc + totalPendapatanBungaBulanIni
+    if (bulan === currentMonthName) return acc + totalPendapatanBungaBulanIni
     return acc + (historicalLaba?.[bulan] || 0)
   }, 0)
   const shuBersih = totalLabaTahunan * 0.95
@@ -204,7 +204,7 @@ function MemberDashboard() {
   const { loans } = useLoanStore()
   const { members, changePassword } = useMemberStore()
   
-  const currentMonthStr = new Date().toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
+  const currentMonthName = new Date().toLocaleDateString("id-ID", { month: 'long' })
   const BULAN_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember"]
   
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
@@ -222,7 +222,7 @@ function MemberDashboard() {
   const activeLoans = loans.filter(l => l.status === "Approved")
   const totalPendapatanBungaBulanIni = activeLoans.reduce((a, l) => a + (l.nominal * (bungaPinjaman / 100)), 0)
   const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
-    if (bulan === currentMonthStr) return acc + totalPendapatanBungaBulanIni
+    if (bulan === currentMonthName) return acc + totalPendapatanBungaBulanIni
     return acc + (historicalLaba?.[bulan] || 0)
   }, 0)
   const shuBersih = totalLabaTahunan * 0.95
