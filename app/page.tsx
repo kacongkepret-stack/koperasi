@@ -34,7 +34,12 @@ export default function Dashboard() {
   const shuBersih = totalLabaTahunan * 0.95
 
   const simpananTerkumpul = members.reduce((a, b) => a + b.saldo_pokok + b.saldo_wajib, 0)
-  const pinjamanAktif = activeLoans.reduce((a, l) => a + l.nominal, 0)
+  const pinjamanAktif = activeLoans.reduce((a, l) => {
+    const cicilanTerbayar = transactions
+      .filter(t => t.tipe === "CICILAN_PINJAMAN" && t.keterangan.includes(l.nama))
+      .reduce((sum, t) => sum + t.nominal, 0)
+    return a + (l.nominal - cicilanTerbayar)
+  }, 0)
   // Total Aset = Modal (Saldo Awal + SHU) + Kewajiban (Simpanan Terkumpul)
   // Atau secara Aktiva = Saldo Kas (Uang Brankas) + Piutang (Pinjaman Aktif)
   const totalAset = simpananTerkumpul + (modalPerusahaan || 0) + shuBersih
