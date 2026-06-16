@@ -404,8 +404,8 @@ export default function PinjamanPage() {
               {/* Tenor Selection */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Tenor (Bulan)</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[3, 6, 8, 10].map((t) => (
+                <div className="grid grid-cols-5 gap-2">
+                  {[3, 5, 6, 8, 10].map((t) => (
                     <button
                       key={t}
                       onClick={() => setTenure(t)}
