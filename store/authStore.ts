@@ -14,8 +14,10 @@ export interface User {
 interface AuthState {
   user: User | null
   isAuthenticated: boolean
+  originalRole: Role | null
   login: (nik: string, role: Role, nama: string) => void
   logout: () => void
+  toggleViewMode: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,8 +25,23 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      login: (nik, role, nama) => set({ user: { id: Date.now().toString(), nik, role, nama }, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      originalRole: null,
+      login: (nik, role, nama) => set({ 
+        user: { id: Date.now().toString(), nik, role, nama }, 
+        isAuthenticated: true,
+        originalRole: role 
+      }),
+      logout: () => set({ user: null, isAuthenticated: false, originalRole: null }),
+      toggleViewMode: () => set((state) => {
+        if (!state.user || state.originalRole !== "admin") return state
+        
+        return {
+          user: {
+            ...state.user,
+            role: state.user.role === "admin" ? "member" : "admin"
+          }
+        }
+      })
     }),
     {
       name: "auth-storage",

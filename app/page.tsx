@@ -211,8 +211,8 @@ function MemberDashboard() {
   }, 0)
   const shuBersih = totalLabaTahunan * 0.95
   
-  const myTotalTabungan = myMemberData ? (myMemberData.saldo_pokok + myMemberData.saldo_wajib + (myMemberData.saldo_shu || 0)) : 0
-  const myEstimasiSHU = globalSimpanan > 0 ? (myTotalTabungan / globalSimpanan) * shuBersih : 0
+  const myTotalTabungan = myMemberData ? (myMemberData.saldo_pokok + myMemberData.saldo_wajib) : 0
+  const myEstimasiSHU = members.length > 0 ? shuBersih / members.length : 0
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Users, Wallet, CreditCard, FileText, ChevronLeft, ChevronRight, Building, LogOut, Settings } from "lucide-react"
+import { LayoutDashboard, Users, Wallet, CreditCard, FileText, ChevronLeft, ChevronRight, Building, LogOut, Settings, Eye, EyeOff } from "lucide-react"
 import { useUIStore } from "@/store/uiStore"
 import { useAuthStore } from "@/store/authStore"
 import { useSettingsStore } from "@/store/settingsStore"
@@ -12,7 +12,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { isSidebarCollapsed, toggleSidebar, isMobileMenuOpen, setMobileMenuOpen } = useUIStore()
-  const { user, logout } = useAuthStore()
+  const { user, originalRole, toggleViewMode, logout } = useAuthStore()
   const { companyName } = useSettingsStore()
 
   // Conditional Navigation
@@ -131,9 +131,20 @@ export default function Sidebar() {
             )}
           </div>
           {(!isSidebarCollapsed || isMobileMenuOpen) && (
-            <button onClick={handleLogout} className="text-slate-400 hover:text-rose-600 transition-colors p-1" title="Logout">
-              <LogOut size={16} />
-            </button>
+            <div className="flex items-center gap-1">
+              {originalRole === "admin" && (
+                <button 
+                  onClick={toggleViewMode} 
+                  className={cn("p-1.5 rounded transition-colors", user?.role === "admin" ? "text-emerald-500 hover:bg-emerald-50" : "text-amber-500 hover:bg-amber-50")}
+                  title={user?.role === "admin" ? "Ubah jadi Tampilan Anggota" : "Kembali ke Tampilan Admin"}
+                >
+                  {user?.role === "admin" ? <Eye size={16} /> : <EyeOff size={16} />}
+                </button>
+              )}
+              <button onClick={handleLogout} className="text-slate-400 hover:text-rose-600 transition-colors p-1.5 rounded hover:bg-rose-50" title="Logout">
+                <LogOut size={16} />
+              </button>
+            </div>
           )}
         </div>
       </div>
