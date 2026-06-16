@@ -216,7 +216,7 @@ function MemberDashboard() {
 
   // Global Koperasi Stats
   const globalSimpanan = members.reduce((acc, m) => acc + (m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)), 0)
-  const globalPinjaman = loans.filter(l => l.status === "Approved").reduce((acc, l) => acc + l.nominal, 0)
+  const globalPinjaman = loans.filter(l => l.status === "Approved").reduce((acc, l) => acc + ((l.nominal / l.tenor) * (l.tenor - l.cicilan_ke)), 0)
 
   // Calculate Estimasi SHU
   const activeLoans = loans.filter(l => l.status === "Approved")
@@ -268,7 +268,7 @@ function MemberDashboard() {
               <div className="w-px h-6 bg-slate-200"></div>
               <div>
                 <span className="text-slate-500 block mb-0.5">Total Aset Keseluruhan</span>
-                <span className="font-bold text-emerald-700">{formatRupiah(myTotalTabungan + myEstimasiSHU)}</span>
+                <span className="font-bold text-emerald-700">{formatRupiah(myTotalTabungan + (myMemberData?.saldo_shu || 0) + myEstimasiSHU)}</span>
               </div>
             </div>
           </CardContent>
@@ -286,11 +286,14 @@ function MemberDashboard() {
               <>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <div className="text-2xl font-bold text-slate-900 tracking-tight">{formatRupiah(myLoan.nominal)}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Total Pinjaman Pokok</div>
+                    <div className="text-2xl font-bold text-slate-900 tracking-tight">{formatRupiah((myLoan.nominal / myLoan.tenor) * (myLoan.tenor - myLoan.cicilan_ke))}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Sisa Hutang Berjalan</div>
                   </div>
-                  <div className="bg-amber-50 text-amber-600 text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-100">
-                    Sisa {myLoan.tenor - myLoan.cicilan_ke} Bulan
+                  <div className="text-right">
+                    <div className="bg-amber-50 text-amber-600 text-[10px] font-semibold px-2 py-0.5 rounded border border-amber-100 mb-1 inline-block">
+                      Sisa {myLoan.tenor - myLoan.cicilan_ke} Bulan
+                    </div>
+                    <div className="text-[10px] text-slate-400 block">Total Plafon: {formatRupiah(myLoan.nominal)}</div>
                   </div>
                 </div>
                 
