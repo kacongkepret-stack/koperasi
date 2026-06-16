@@ -60,7 +60,17 @@ export default function LaporanPage() {
   const daftarPeminjam = members
     .map(member => {
       const loan = activeLoans.find(l => l.nama === member.nama)
-      if (!loan) return null
+      if (!loan) {
+        return {
+          nama: member.nama,
+          dept: member.departemen || "-",
+          iuran: simpananWajibBulanan,
+          potonganPinjaman: 0,
+          totalPotongan: simpananWajibBulanan,
+          potonganKe: "-",
+          sisaHutang: 0
+        }
+      }
       
       const pokokPerBulan = loan.nominal / loan.tenor
       const appliedBungaRate = loan.bunga_rate !== null && loan.bunga_rate !== undefined ? loan.bunga_rate : bungaPinjaman
@@ -73,11 +83,10 @@ export default function LaporanPage() {
         iuran: simpananWajibBulanan,
         potonganPinjaman: potonganPinjaman,
         totalPotongan: simpananWajibBulanan + potonganPinjaman,
-        potonganKe: loan.cicilan_ke + 1,
+        potonganKe: `KE ${loan.cicilan_ke + 1}`,
         sisaHutang: pokokPerBulan * (loan.tenor - loan.cicilan_ke)
       }
     })
-    .filter(Boolean) as any[]
 
   const totalIuranPeminjam = daftarPeminjam.reduce((a, b) => a + b.iuran, 0)
   const totalPotonganPinjaman = daftarPeminjam.reduce((a, b) => a + b.potonganPinjaman, 0)
@@ -446,7 +455,7 @@ export default function LaporanPage() {
       {/* Tabs */}
       <div className="bg-white/60 p-1.5 rounded-xl inline-flex flex-wrap gap-1 border border-slate-200/60 shadow-sm backdrop-blur-md w-max max-w-full overflow-x-auto mb-2">
         {[
-          { id: "peminjam", label: "Daftar Peminjam" },
+          { id: "peminjam", label: "Daftar Potongan HRD" },
           { id: "tabungan", label: "Data Tabungan" },
           { id: "rugilaba", label: "Rugi - Laba" },
           { id: "keuangan", label: "Laporan Keuangan" }
@@ -499,8 +508,8 @@ export default function LaporanPage() {
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(r.iuran)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right">{formatRupiah(r.potonganPinjaman)}</td>
                       <td className="px-4 py-3 border-r border-slate-200 text-right font-semibold">{formatRupiah(r.totalPotongan)}</td>
-                      <td className="px-4 py-3 border-r border-slate-200 text-center text-slate-500">KE {r.potonganKe}</td>
-                      <td className="px-4 py-3 text-right font-bold text-red-600">{formatRupiah(r.sisaHutang)}</td>
+                      <td className="px-4 py-3 border-r border-slate-200 text-center text-slate-500">{r.potonganKe}</td>
+                      <td className="px-4 py-3 text-right font-bold text-red-600">{r.sisaHutang > 0 ? formatRupiah(r.sisaHutang) : "-"}</td>
                     </tr>
                   ))}
                   {daftarPeminjam.length > 0 && (
