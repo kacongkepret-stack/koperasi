@@ -8,20 +8,34 @@ import { useAuthStore } from "@/store/authStore"
 import { useSettingsStore } from "@/store/settingsStore"
 import { useLoanStore } from "@/store/loanStore"
 import { useMemberStore } from "@/store/memberStore"
+import { useTransactionStore } from "@/store/transactionStore"
 
 export default function Dashboard() {
   const { user } = useAuthStore()
-  const { companyName, saldoAwalSistem } = useSettingsStore()
   const { loans } = useLoanStore()
   const { members } = useMemberStore()
+  const { transactions } = useTransactionStore()
+  const { companyName, saldoAwalSistem, bungaPinjaman, historicalLaba } = useSettingsStore()
 
   if (user?.role === "member") {
     return <MemberDashboard />
   }
 
+  // Calculate real SHU
+  const currentMonthStr = new Date().toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
+  const BULAN_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember"]
+  
+  const activeLoans = loans.filter(l => l.status === "Approved")
+  const totalPendapatanBungaBulanIni = activeLoans.reduce((a, l) => a + (l.nominal * (bungaPinjaman / 100)), 0)
+  const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
+    if (bulan === currentMonthStr) return acc + totalPendapatanBungaBulanIni
+    return acc + (historicalLaba?.[bulan] || 0)
+  }, 0)
+  const shuBersih = totalLabaTahunan * 0.95
+
   const simpananTerkumpul = members.reduce((a, b) => a + b.saldo_pokok + b.saldo_wajib, 0)
-  const pinjamanAktif = loans.filter(l => l.status === "Approved").reduce((a, l) => a + l.nominal, 0)
-  const totalAset = simpananTerkumpul + pinjamanAktif + saldoAwalSistem
+  const pinjamanAktif = activeLoans.reduce((a, l) => a + l.nominal, 0)
+  const totalAset = simpananTerkumpul + pinjamanAktif + saldoAwalSistem + shuBersih
   
   const totalAnggota = members.filter(m => m.status === "Aktif").length
   const recentLoansList = [...loans].sort((a,b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 5)
@@ -48,7 +62,6 @@ export default function Dashboard() {
         <StatCard 
           title="Total Aset (Estimasi)" 
           value={totalAset} 
-          trend={10.5} 
           icon={Wallet} 
           iconColor="text-emerald-600"
           iconBg="bg-emerald-100/50"
@@ -56,7 +69,6 @@ export default function Dashboard() {
         <StatCard 
           title="Pinjaman Aktif" 
           value={pinjamanAktif} 
-          trend={-2.1} 
           icon={CreditCard} 
           iconColor="text-blue-600"
           iconBg="bg-blue-100/50"
@@ -64,15 +76,13 @@ export default function Dashboard() {
         <StatCard 
           title="Simpanan Terkumpul" 
           value={simpananTerkumpul} 
-          trend={5.4} 
           icon={Users} 
           iconColor="text-indigo-600"
           iconBg="bg-indigo-100/50"
         />
         <StatCard 
           title="Estimasi Total SHU" 
-          value={totalAset * 0.08} 
-          trend={12.5} 
+          value={shuBersih} 
           icon={PiggyBank} 
           iconColor="text-amber-600"
           iconBg="bg-amber-100/50"
@@ -400,25 +410,27 @@ function StatCard({
       <CardContent className="p-4">
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-slate-500">{title}</p>
-            <p className="text-lg font-bold text-slate-900 tracking-tight">
-              {isPercentage ? `${value}%` : formatRupiah(value)}
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{title}</p>
+            <p className="text-xl font-black text-slate-900 tracking-tight">
+              {isPercentage ? `${value.toFixed(1)}%` : formatRupiah(value)}
             </p>
           </div>
-          <div className={cn("p-2 rounded-lg transition-transform group-hover:scale-105", iconBg, iconColor)}>
-            <Icon size={16} strokeWidth={2.5} />
+          <div className={cn("p-2 rounded-xl transition-transform group-hover:scale-105 shrink-0", iconBg, iconColor)}>
+            <Icon size={20} strokeWidth={2.5} />
           </div>
         </div>
-        <div className="mt-3 flex items-center text-[11px]">
-          <span className={cn(
-            "flex items-center font-semibold gap-0.5",
-            isGood ? "text-emerald-600" : "text-rose-600"
-          )}>
-            {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-            {Math.abs(trend)}%
-          </span>
-          <span className="text-slate-400 ml-1.5">dari bulan lalu</span>
-        </div>
+        {trend !== undefined && (
+          <div className="mt-3 flex items-center text-[11px]">
+            <span className={cn(
+              "flex items-center font-semibold gap-0.5",
+              isGood ? "text-emerald-600" : "text-rose-600"
+            )}>
+              {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+              {Math.abs(trend)}%
+            </span>
+            <span className="text-slate-400 ml-1.5">dari bulan lalu</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
