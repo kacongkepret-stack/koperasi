@@ -219,16 +219,16 @@ export default function LaporanPage() {
         "NO": i + 1,
         "NAMA": m.nama,
         "DEPT": m.departemen,
-        "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0),
+        "TOTAL TABUNGAN": m.saldo_pokok + m.saldo_wajib,
         "SHU LAMA": m.saldo_shu || 0,
         "EST. SHU BARU": estimasiSHU,
         "TOTAL SHU": (m.saldo_shu || 0) + estimasiSHU,
-        "TOTAL ASET": (m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + estimasiSHU
+        "TOTAL ASET": (m.saldo_pokok + m.saldo_wajib) + (m.saldo_shu || 0) + estimasiSHU
       }
     })
     ws2Data.push({
       "NO": "" as any, "NAMA": "", "DEPT": "Total", 
-      "TOTAL TABUNGAN": totalSaldoKeseluruhan,
+      "TOTAL TABUNGAN": totalSaldoKeseluruhan - totalSaldoSHU,
       "SHU LAMA": totalSaldoSHU,
       "EST. SHU BARU": shuBersih,
       "TOTAL SHU": totalSaldoSHU + shuBersih,
@@ -602,17 +602,17 @@ export default function LaporanPage() {
                       <td className="px-3 py-2.5 border-r border-slate-200 text-center font-medium">{i + 1}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200">{m.nama}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200">{m.departemen || "-"}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok + m.saldo_wajib)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_shu || 0)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200 text-right font-medium text-blue-600">{formatRupiah(members.length > 0 ? shuBersih / members.length : 0)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200 text-right font-bold text-blue-700 bg-blue-50/30">{formatRupiah((m.saldo_shu || 0) + (members.length > 0 ? shuBersih / members.length : 0))}</td>
-                      <td className="px-3 py-2.5 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (members.length > 0 ? shuBersih / members.length : 0))}</td>
+                      <td className="px-3 py-2.5 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib) + (m.saldo_shu || 0) + (members.length > 0 ? shuBersih / members.length : 0))}</td>
                     </tr>
                   ))}
                   {members.length > 0 && (
                     <tr className="bg-slate-100 border-t-2 border-slate-300 font-bold text-slate-800">
                       <td colSpan={3} className="px-3 py-2.5 border-r border-slate-300 text-center">Total</td>
-                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoKeseluruhan)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoKeseluruhan - totalSaldoSHU)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-300 text-right">{formatRupiah(totalSaldoSHU)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-600 font-medium">{formatRupiah(shuBersih)}</td>
                       <td className="px-3 py-2.5 border-r border-slate-300 text-right text-blue-700 bg-blue-50/50 font-bold">{formatRupiah(totalSaldoSHU + shuBersih)}</td>
