@@ -6,6 +6,7 @@ import { formatRupiah, cn } from "@/lib/utils"
 import { Search, Filter, MoreHorizontal, Briefcase, Calendar, Plus, X } from "lucide-react"
 import { useAuthStore } from "@/store/authStore"
 import { useSettingsStore } from "@/store/settingsStore"
+import { useTransactionStore } from "@/store/transactionStore"
 
 export default function AnggotaPage() {
   const { members, addMember, setSaldoAwal } = useMemberStore()
