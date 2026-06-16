@@ -200,7 +200,7 @@ import { useState } from "react"
 
 function MemberDashboard() {
   const { user } = useAuthStore()
-  const { simpananWajibBulanan, bungaPinjaman, historicalLaba } = useSettingsStore()
+  const { simpananWajibBulanan, bungaPinjaman, historicalLaba, modalPerusahaan } = useSettingsStore()
   const { loans } = useLoanStore()
   const { members, changePassword } = useMemberStore()
   
@@ -215,7 +215,7 @@ function MemberDashboard() {
   const myMemberData = members.find(m => m.nik === user?.nik)
 
   // Global Koperasi Stats
-  const globalSimpanan = members.reduce((acc, m) => acc + (m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)), 0)
+  const globalSimpananTerkumpul = members.reduce((acc, m) => acc + m.saldo_pokok + m.saldo_wajib, 0)
   const globalPinjaman = loans.filter(l => l.status === "Approved").reduce((acc, l) => acc + ((l.nominal / l.tenor) * (l.tenor - l.cicilan_ke)), 0)
 
   // Calculate Estimasi SHU
@@ -229,6 +229,8 @@ function MemberDashboard() {
   
   const myTotalTabungan = myMemberData ? (myMemberData.saldo_pokok + myMemberData.saldo_wajib) : 0
   const myEstimasiSHU = members.length > 0 ? shuBersih / members.length : 0
+  
+  const globalTotalAset = globalSimpananTerkumpul + (modalPerusahaan || 0) + shuBersih
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -326,8 +328,8 @@ function MemberDashboard() {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between shadow-sm">
             <div>
-              <p className="text-[10px] font-semibold text-slate-500 uppercase">Total Simpanan Koperasi</p>
-              <p className="font-bold text-slate-900">{formatRupiah(globalSimpanan)}</p>
+              <p className="text-[10px] font-semibold text-slate-500 uppercase">Total Aset (Estimasi)</p>
+              <p className="font-bold text-slate-900">{formatRupiah(globalTotalAset)}</p>
             </div>
             <Users size={18} className="text-slate-300" />
           </div>
