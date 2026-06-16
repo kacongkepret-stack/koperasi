@@ -63,7 +63,8 @@ export default function LaporanPage() {
       if (!loan) return null
       
       const pokokPerBulan = loan.nominal / loan.tenor
-      const bungaPerBulan = loan.nominal * (bungaPinjaman / 100)
+      const appliedBungaRate = loan.bunga_rate !== null && loan.bunga_rate !== undefined ? loan.bunga_rate : bungaPinjaman
+      const bungaPerBulan = loan.nominal * (appliedBungaRate / 100)
       const potonganPinjaman = pokokPerBulan + bungaPerBulan
       
       return {
