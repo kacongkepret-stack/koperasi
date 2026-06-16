@@ -18,6 +18,8 @@ export default function LaporanPage() {
   const [showToast, setShowToast] = useState(false)
   const [toastMsg, setToastMsg] = useState({ title: "", desc: "" })
   const [isExportingPDF, setIsExportingPDF] = useState(false)
+  const [isMassShuMode, setIsMassShuMode] = useState(false)
+  const [massShuForm, setMassShuForm] = useState({ dicairkan: 0 })
   const [activeTab, setActiveTab] = useState<"peminjam" | "tabungan" | "rugilaba" | "keuangan">("peminjam")
   
   const { members } = useMemberStore()
@@ -212,7 +214,7 @@ export default function LaporanPage() {
 
     // 2. Sheet Data Tabungan
     const ws2Data = members.map((m, i) => {
-      const estimasiSHU = totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0;
+      const estimasiSHU = members.length > 0 ? shuBersih / members.length : 0;
       return {
         "NO": i + 1,
         "NAMA": m.nama,
@@ -565,7 +567,17 @@ export default function LaporanPage() {
                   </div>
                   <div className="bg-emerald-600 flex-1 md:flex-none px-4 py-2.5 rounded-lg border border-emerald-700 text-center shadow-sm">
                     <div className="text-emerald-100 text-[9px] font-bold tracking-wider uppercase mb-0.5">SHU Dibagikan (95%)</div>
-                    <div className="text-white font-bold text-xs">{formatRupiah(shuBersih)}</div>
+                    <div className="text-white font-bold text-xs mb-1">{formatRupiah(shuBersih)}</div>
+                    <button 
+                      onClick={() => {
+                        const defaultCair = members.length > 0 ? Math.floor((shuBersih / members.length) / 50000) * 50000 : 0
+                        setMassShuForm({ dicairkan: defaultCair })
+                        setIsMassShuMode(true)
+                      }}
+                      className="text-[10px] w-full bg-white text-emerald-700 font-bold py-1 rounded shadow-sm hover:bg-emerald-50 transition-colors"
+                    >
+                      Bagikan Masal
+                    </button>
                   </div>
                 </div>
               </div>
@@ -592,9 +604,9 @@ export default function LaporanPage() {
                       <td className="px-3 py-2.5 border-r border-slate-200">{m.departemen || "-"}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0))}</td>
                       <td className="px-3 py-2.5 border-r border-slate-200 text-right">{formatRupiah(m.saldo_shu || 0)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-medium text-blue-600">{formatRupiah(totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0)}</td>
-                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-bold text-blue-700 bg-blue-50/30">{formatRupiah((m.saldo_shu || 0) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0))}</td>
-                      <td className="px-3 py-2.5 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (totalSaldoKeseluruhan > 0 ? ((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) / totalSaldoKeseluruhan) * shuBersih : 0))}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-medium text-blue-600">{formatRupiah(members.length > 0 ? shuBersih / members.length : 0)}</td>
+                      <td className="px-3 py-2.5 border-r border-slate-200 text-right font-bold text-blue-700 bg-blue-50/30">{formatRupiah((m.saldo_shu || 0) + (members.length > 0 ? shuBersih / members.length : 0))}</td>
+                      <td className="px-3 py-2.5 text-right font-bold text-emerald-700 bg-emerald-50/50">{formatRupiah((m.saldo_pokok + m.saldo_wajib + (m.saldo_shu || 0)) + (members.length > 0 ? shuBersih / members.length : 0))}</td>
                     </tr>
                   ))}
                   {members.length > 0 && (
@@ -836,6 +848,101 @@ export default function LaporanPage() {
               <p className="font-semibold text-sm">{toastMsg.title}</p>
               <p className="text-xs text-slate-400">{toastMsg.desc}</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bagikan SHU Masal Modal */}
+      {isMassShuMode && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50/50">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Pembagian SHU Masal</h2>
+                <p className="text-[10px] text-slate-500">Untuk {members.length} anggota aktif</p>
+              </div>
+              <button 
+                onClick={() => setIsMassShuMode(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const hakPerOrang = members.length > 0 ? shuBersih / members.length : 0
+              if (massShuForm.dicairkan > hakPerOrang) {
+                return alert("Yang dicairkan tidak boleh lebih besar dari hak SHU per orang!")
+              }
+              
+              const { setSaldoAwal } = useMemberStore.getState()
+              const { addTransaction } = useTransactionStore.getState()
+
+              const shuDisimpan = hakPerOrang - massShuForm.dicairkan
+
+              for (const member of members) {
+                const newSaldoShu = (member.saldo_shu || 0) + shuDisimpan
+                await setSaldoAwal(member.id, member.saldo_pokok, member.saldo_wajib, newSaldoShu)
+                
+                if (massShuForm.dicairkan > 0) {
+                  await addTransaction({
+                    member_id: member.id,
+                    tipe: "PENCAIRAN_SHU",
+                    nominal: massShuForm.dicairkan,
+                    keterangan: `Pencairan Tunai SHU ${member.nama}`
+                  })
+                }
+              }
+
+              setIsMassShuMode(false)
+              setToastMsg({ title: "SHU Berhasil Dibagikan!", desc: `SHU telah diproses untuk ${members.length} anggota.` })
+              setShowToast(true)
+              setTimeout(() => setShowToast(false), 3000)
+            }}>
+              <div className="p-5 space-y-4">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Sistem akan membagikan SHU secara merata kepada semua anggota. Anda dapat menentukan berapa nominal yang ingin dicairkan tunai, sisanya otomatis masuk ke Saldo SHU anggota.
+                  </p>
+                </div>
+                
+                <div className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
+                  <span className="text-slate-600 font-semibold">Hak SHU Per Anggota:</span>
+                  <span className="font-bold text-slate-900">{formatRupiah(members.length > 0 ? shuBersih / members.length : 0)}</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-700 uppercase">Akan Dicairkan Tunai (Per Anggota)</label>
+                  <input 
+                    type="number" 
+                    required
+                    min="0"
+                    max={members.length > 0 ? shuBersih / members.length : 0}
+                    value={massShuForm.dicairkan || ""}
+                    onChange={e => setMassShuForm({...massShuForm, dicairkan: Number(e.target.value)})}
+                    className="w-full px-3 py-2 border border-rose-200 bg-rose-50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 text-rose-900" 
+                  />
+                  <p className="text-[9px] text-slate-500 italic mt-1">*Nominal default dibulatkan ke bawah ke kelipatan Rp 50.000</p>
+                </div>
+                
+                <div className="h-px bg-slate-200 my-2"></div>
+                
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-600 font-semibold">Sisa Masuk Saldo:</span>
+                  <span className="font-bold text-emerald-600">{formatRupiah((members.length > 0 ? shuBersih / members.length : 0) - massShuForm.dicairkan)}</span>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+                <button type="button" onClick={() => setIsMassShuMode(false)} className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                  Batal
+                </button>
+                <button type="submit" className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm flex items-center gap-1.5">
+                  <CheckCircle2 size={14} /> Proses Semua Anggota
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
