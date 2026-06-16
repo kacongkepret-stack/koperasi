@@ -161,14 +161,24 @@ export default function LaporanPage() {
 
   const totalPemasukan = pemasukanIuranWajib + totalPemasukanPokok + totalPendapatanBungaTrans + totalPemasukanPelunasan + totalSisaSaldoAwal
 
-  // 5. Pengeluaran (Pinjaman dicairkan)
+  // 5. Pengeluaran (Pinjaman dicairkan & SHU dicairkan)
   const pengeluaranPinjaman = selectedTransactions
     .filter(t => t.tipe === "PENCAIRAN_PINJAMAN")
     .map(t => ({
       nama: t.keterangan.replace("Pencairan Dana ", ""),
       nominal: t.nominal
     }))
-  const totalPengeluaran = pengeluaranPinjaman.reduce((a, b) => a + b.nominal, 0)
+  
+  const pengeluaranSHU = selectedTransactions
+    .filter(t => t.tipe === "PENCAIRAN_SHU")
+    .map(t => ({
+      nama: t.keterangan.replace("Pencairan Tunai SHU ", ""),
+      nominal: t.nominal
+    }))
+
+  const totalPengeluaranPinjaman = pengeluaranPinjaman.reduce((a, b) => a + b.nominal, 0)
+  const totalPengeluaranSHU = pengeluaranSHU.reduce((a, b) => a + b.nominal, 0)
+  const totalPengeluaran = totalPengeluaranPinjaman + totalPengeluaranSHU
   
   const saldoAkhir = totalPemasukan - totalPengeluaran
 
@@ -765,6 +775,23 @@ export default function LaporanPage() {
                       </div>
                     )}
                   </div>
+
+                  {pengeluaranSHU.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                      <h4 className="text-xs font-bold text-slate-700 mb-2">Pencairan Tunai SHU</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+                        {pengeluaranSHU.map((p, i) => (
+                          <div key={`shu-${i}`} className="flex justify-between items-center py-1.5 border-b border-dashed border-slate-200 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400 font-bold w-4 text-right">{i+1}.</span>
+                              <span className="font-medium text-slate-600">Tunai <span className="font-bold text-slate-800 ml-1">{p.nama}</span></span>
+                            </div>
+                            <span className="font-bold text-rose-600">{formatRupiah(p.nominal)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* TOTAL PENGELUARAN */}
                   <div className="mt-4 pt-3 border-t-2 border-rose-100 flex justify-between items-center px-1">

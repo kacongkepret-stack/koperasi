@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 export type Transaction = {
   id: string
   member_id: string | null
-  tipe: "SIMPANAN_POKOK" | "SIMPANAN_WAJIB" | "CICILAN_PINJAMAN" | "PENCAIRAN_PINJAMAN" | "PELUNASAN_PINJAMAN" | "PENDAPATAN_BUNGA"
+  tipe: "SIMPANAN_POKOK" | "SIMPANAN_WAJIB" | "CICILAN_PINJAMAN" | "PENCAIRAN_PINJAMAN" | "PELUNASAN_PINJAMAN" | "PENDAPATAN_BUNGA" | "PENCAIRAN_SHU"
   nominal: number
   keterangan: string
   created_at: string

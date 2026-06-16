@@ -17,7 +17,9 @@ export default function AnggotaPage() {
   const [selectedUser, setSelectedUser] = useState<Anggota | null>(null)
   const [isAddMode, setIsAddMode] = useState(false)
   const [isEditSaldoMode, setIsEditSaldoMode] = useState(false)
+  const [isBagiShuMode, setIsBagiShuMode] = useState(false)
   const [saldoForm, setSaldoForm] = useState({ pokok: 0, wajib: 0, shu: 0 })
+  const [shuForm, setShuForm] = useState({ totalHak: 0, dicairkan: 0 })
 
   // Form states
   const [formData, setFormData] = useState({
@@ -263,15 +265,28 @@ export default function AnggotaPage() {
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Informasi Finansial</h4>
-                      <button 
-                        onClick={() => {
-                          setSaldoForm({ pokok: selectedUser.saldo_pokok, wajib: selectedUser.saldo_wajib, shu: selectedUser.saldo_shu || 0 })
-                          setIsEditSaldoMode(true)
-                        }}
-                        className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded transition-colors"
-                      >
-                        Edit Saldo Awal
-                      </button>
+                      <div className="flex gap-2">
+                        {user?.role === "admin" && (
+                          <button 
+                            onClick={() => {
+                              setShuForm({ totalHak: 0, dicairkan: 0 })
+                              setIsBagiShuMode(true)
+                            }}
+                            className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded transition-colors"
+                          >
+                            Bagikan SHU
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => {
+                            setSaldoForm({ pokok: selectedUser.saldo_pokok, wajib: selectedUser.saldo_wajib, shu: selectedUser.saldo_shu || 0 })
+                            setIsEditSaldoMode(true)
+                          }}
+                          className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded transition-colors"
+                        >
+                          Edit Saldo Awal
+                        </button>
+                      </div>
                     </div>
                     <div className="bg-white border border-slate-200 rounded-lg divide-y divide-slate-100">
                       <div className="p-3 flex justify-between items-center text-xs">
@@ -363,6 +378,102 @@ export default function AnggotaPage() {
               </div>
             </div>
           )}
+
+          {/* Bagikan SHU Modal */}
+          {isBagiShuMode && selectedUser && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900">Pembagian SHU Tahunan</h2>
+                    <p className="text-[10px] text-slate-500">{selectedUser.nama} ({selectedUser.nik})</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsBagiShuMode(false)}
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-100"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                
+                <form onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (shuForm.dicairkan > shuForm.totalHak) {
+                    return alert("Yang dicairkan tidak boleh lebih besar dari total hak SHU!")
+                  }
+                  
+                  const shuDisimpan = shuForm.totalHak - shuForm.dicairkan
+                  const newSaldoShu = (selectedUser.saldo_shu || 0) + shuDisimpan
+
+                  // Update member balance
+                  await setSaldoAwal(selectedUser.id, selectedUser.saldo_pokok, selectedUser.saldo_wajib, newSaldoShu)
+                  
+                  // Add transaction for cash disbursed
+                  if (shuForm.dicairkan > 0) {
+                    const { addTransaction } = useTransactionStore.getState()
+                    await addTransaction({
+                      member_id: selectedUser.id,
+                      tipe: "PENCAIRAN_SHU",
+                      nominal: shuForm.dicairkan,
+                      keterangan: `Pencairan Tunai SHU ${selectedUser.nama}`
+                    })
+                  }
+
+                  setSelectedUser({...selectedUser, saldo_shu: newSaldoShu})
+                  setIsBagiShuMode(false)
+                  alert("SHU berhasil dibagikan!")
+                }}>
+                  <div className="p-5 space-y-4">
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2">
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Masukkan total hak SHU anggota tahun ini. Jika ada porsi yang diberikan <b>tunai/transfer</b>, masukkan di kolom pencairan. Sisanya akan otomatis ditambahkan ke Saldo SHU anggota.
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-700 uppercase">Total Hak SHU Didapatkan</label>
+                      <input 
+                        type="number" 
+                        required
+                        min="0"
+                        value={shuForm.totalHak || ""}
+                        onChange={e => setShuForm({...shuForm, totalHak: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" 
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-slate-700 uppercase">SHU Dicairkan (Tunai/Transfer)</label>
+                      <input 
+                        type="number" 
+                        required
+                        min="0"
+                        max={shuForm.totalHak}
+                        value={shuForm.dicairkan || ""}
+                        onChange={e => setShuForm({...shuForm, dicairkan: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-rose-200 bg-rose-50 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-rose-500 text-rose-900" 
+                      />
+                    </div>
+                    
+                    <div className="h-px bg-slate-200 my-2"></div>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-600 font-semibold">Sisa Masuk Saldo SHU:</span>
+                      <span className="font-bold text-emerald-600">{formatRupiah(shuForm.totalHak - shuForm.dicairkan)}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+                    <button type="button" onClick={() => setIsBagiShuMode(false)} className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                      Batal
+                    </button>
+                    <button type="submit" className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm">
+                      Simpan Pembagian
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
         </>
       )}
     </div>
