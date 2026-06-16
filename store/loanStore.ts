@@ -11,6 +11,7 @@ export type Loan = {
   status: "Pending" | "Approved" | "Rejected" | "Lunas"
   tenor: number
   cicilan_ke: number
+  bunga_rate?: number | null
   created_at?: string
 }
 
@@ -23,8 +24,8 @@ interface LoanState {
   setTenure: (tenure: number) => void
   monthlyInstallment: () => number
   totalPayment: () => number
-  addLoan: (member_id: string, nama: string, nominal: number) => Promise<void>
-  addMigratedLoan: (member_id: string, nama: string, nominal: number, cicilan_ke: number) => Promise<void>
+  addLoan: (member_id: string, nama: string, nominal: number, bunga_rate?: number | null) => Promise<void>
+  addMigratedLoan: (member_id: string, nama: string, nominal: number, cicilan_ke: number, bunga_rate?: number | null) => Promise<void>
   updateLoanStatus: (id: string, status: "Approved" | "Rejected" | "Lunas") => Promise<void>
   approveWithKonpensasi: (newLoanId: string, oldLoanId: string, sisaPokok: number, totalSisaBunga: number, rateBunga: number) => Promise<void>
   processAllInstallments: () => Promise<void>
@@ -63,28 +64,30 @@ export const useLoanStore = create<LoanState>((set, get) => ({
     const totalInterest = amount * (interestRate / 100) * tenure
     return amount + totalInterest
   },
-  addLoan: async (member_id, nama, nominal) => {
+  addLoan: async (member_id, nama, nominal, bunga_rate = null) => {
     const state = get()
     const { data, error } = await supabase.from('loans').insert([{
       member_id,
       nominal,
       status: "Pending",
       tenor: state.tenure,
-      cicilan_ke: 0
+      cicilan_ke: 0,
+      bunga_rate
     }]).select().single()
 
     if (data && !error) {
       set({ loans: [{ ...data, nama } as Loan, ...state.loans] })
     }
   },
-  addMigratedLoan: async (member_id, nama, nominal, cicilan_ke) => {
+  addMigratedLoan: async (member_id, nama, nominal, cicilan_ke, bunga_rate = null) => {
     const state = get()
     const { data, error } = await supabase.from('loans').insert([{
       member_id,
       nominal,
       status: "Approved",
       tenor: state.tenure,
-      cicilan_ke
+      cicilan_ke,
+      bunga_rate
     }]).select().single()
 
     if (data && !error) {
@@ -184,28 +187,58 @@ export const useLoanStore = create<LoanState>((set, get) => ({
     })
     set({ loans: newLoans })
 
-    // Log transaction collectively
+    // Log transaction individually for historical reporting
     const activeLoans = state.loans.filter(l => l.status === "Approved" && l.cicilan_ke < l.tenor)
-    const interestRate = useSettingsStore.getState().bungaPinjaman
-    const totalEstimasi = activeLoans.reduce((acc, l) => {
-      const totalInterest = l.nominal * (interestRate / 100) * l.tenor
-      const monthly = (l.nominal + totalInterest) / l.tenor
-      return acc + monthly
-    }, 0)
+    const globalInterestRate = useSettingsStore.getState().bungaPinjaman
+    
+    // 1. Process SIMPANAN WAJIB for all members
+    const simpananWajibBulanan = useSettingsStore.getState().simpananWajibBulanan || 100000
+    const { data: members } = await supabase.from('members').select('id, nama, saldo_wajib')
+    
+    if (members) {
+      await Promise.all(members.map(async (m) => {
+        // Update DB
+        await supabase.from('members')
+          .update({ saldo_wajib: (m.saldo_wajib || 0) + simpananWajibBulanan })
+          .eq('id', m.id)
+        
+        // Log transaction
+        await useTransactionStore.getState().addTransaction({
+          member_id: m.id,
+          tipe: "SIMPANAN_WAJIB",
+          nominal: simpananWajibBulanan,
+          keterangan: `Simpanan Wajib ${m.nama}`
+        })
+      }))
+    }
 
-    await useTransactionStore.getState().addTransaction({
-      member_id: null,
-      tipe: "CICILAN_PINJAMAN",
-      nominal: totalEstimasi,
-      keterangan: `Proses Massal Cicilan Pinjaman - Bulan ${new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' })}`
-    })
+    // 2. Process INSTALLMENTS
+    await Promise.all(activeLoans.map(async (l) => {
+      const rate = l.bunga_rate !== null && l.bunga_rate !== undefined ? l.bunga_rate : globalInterestRate
+      const pokok = l.nominal / l.tenor
+      const bunga = l.nominal * (rate / 100)
+      
+      // Update DB
+      await supabase.from('loans').update({ cicilan_ke: l.cicilan_ke + 1 }).eq('id', l.id)
+      
+      // Log Pokok
+      await useTransactionStore.getState().addTransaction({
+        member_id: l.member_id,
+        tipe: "CICILAN_PINJAMAN",
+        nominal: pokok,
+        keterangan: `Cicilan Pokok ${l.nama}`
+      })
 
-    // Update cicilan_ke in Supabase for each active loan
-    await Promise.all(
-      activeLoans.map(l => 
-        supabase.from('loans').update({ cicilan_ke: l.cicilan_ke + 1 }).eq('id', l.id)
-      )
-    )
+      // Log Bunga (jika ada)
+      if (bunga > 0) {
+        await useTransactionStore.getState().addTransaction({
+          member_id: l.member_id,
+          tipe: "PENDAPATAN_BUNGA",
+          nominal: bunga,
+          keterangan: `Pendapatan Bunga ${l.nama} (Rate: ${bunga})`
+        })
+      }
+    }))
   },
   deleteLoan: async (id) => {
     const state = get()

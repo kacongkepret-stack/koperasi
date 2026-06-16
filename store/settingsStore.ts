@@ -16,7 +16,7 @@ interface SettingsState {
   expenses: Expense[]
   simpananWajibBulanan: number
   bungaPinjaman: number
-  saldoBantuan: number
+  saldoAwalSistem: number
   setCompanyName: (name: string) => Promise<void>
   setCompanyLogo: (logo: string) => Promise<void>
   addDepartment: (dept: string) => void
@@ -24,7 +24,7 @@ interface SettingsState {
   addExpense: (expense: Omit<Expense, "id" | "tanggal">) => void
   setSimpananWajibBulanan: (nominal: number) => Promise<void>
   setBungaPinjaman: (nominal: number) => Promise<void>
-  setSaldoBantuan: (nominal: number) => Promise<void>
+  setSaldoAwalSistem: (nominal: number) => Promise<void>
   lastPostedSimpananMonth: string
   lastPostedCicilanMonth: string
   setLastPostedSimpananMonth: (month: string) => void
@@ -41,7 +41,7 @@ export const useSettingsStore = create<SettingsState>()(
       companyLogo: "",
       simpananWajibBulanan: 100000,
       bungaPinjaman: 1.0,
-      saldoBantuan: 0,
+      saldoAwalSistem: 0,
       lastPostedSimpananMonth: "",
       lastPostedCicilanMonth: "",
       departments: ["Front Office", "Housekeeping", "HRD", "Engineering", "Finance", "F&B Service", "F&B Product", "GM", "Mice", "Security", "Sales"],
@@ -67,10 +67,10 @@ export const useSettingsStore = create<SettingsState>()(
     if (error) console.error("Error updating bunga pinjaman:", error)
     set({ bungaPinjaman: nominal })
   },
-  setSaldoBantuan: async (nominal) => {
-    const { error } = await supabase.from('settings').update({ saldo_bantuan: nominal }).eq('id', 1)
-    if (error) console.error("Error updating saldo bantuan:", error)
-    set({ saldoBantuan: nominal })
+  setSaldoAwalSistem: async (nominal) => {
+    const { error } = await supabase.from('settings').update({ saldo_awal_sistem: nominal }).eq('id', 1)
+    if (error) console.error("Error updating saldo awal sistem:", error)
+    set({ saldoAwalSistem: nominal })
   },
   setHistoricalLaba: async (month, nominal) => {
     const currentState = get().historicalLaba
@@ -94,7 +94,7 @@ export const useSettingsStore = create<SettingsState>()(
         companyLogo: data.company_logo || "",
         simpananWajibBulanan: Number(data.simpanan_wajib_bulanan),
         bungaPinjaman: data.bunga_pinjaman !== null && data.bunga_pinjaman !== undefined ? Number(data.bunga_pinjaman) : 1.0,
-        saldoBantuan: data.saldo_bantuan ? Number(data.saldo_bantuan) : 0,
+        saldoAwalSistem: data.saldo_awal_sistem ? Number(data.saldo_awal_sistem) : 0,
         historicalLaba: data.historical_laba || {}
       })
     }

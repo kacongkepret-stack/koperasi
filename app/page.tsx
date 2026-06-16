@@ -11,7 +11,7 @@ import { useMemberStore } from "@/store/memberStore"
 
 export default function Dashboard() {
   const { user } = useAuthStore()
-  const { companyName, saldoBantuan } = useSettingsStore()
+  const { companyName, saldoAwalSistem } = useSettingsStore()
   const { loans } = useLoanStore()
   const { members } = useMemberStore()
 
@@ -21,7 +21,7 @@ export default function Dashboard() {
 
   const simpananTerkumpul = members.reduce((a, b) => a + b.saldo_pokok + b.saldo_wajib, 0)
   const pinjamanAktif = loans.filter(l => l.status === "Approved").reduce((a, l) => a + l.nominal, 0)
-  const totalAset = simpananTerkumpul + pinjamanAktif + saldoBantuan
+  const totalAset = simpananTerkumpul + pinjamanAktif + saldoAwalSistem
   
   const totalAnggota = members.filter(m => m.status === "Aktif").length
   const recentLoansList = [...loans].sort((a,b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 5)

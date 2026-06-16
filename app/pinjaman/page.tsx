@@ -19,6 +19,7 @@ export default function PinjamanPage() {
   // Migration mode states
   const [isMigrationMode, setIsMigrationMode] = useState(false)
   const [migratedcicilan_ke, setMigratedcicilan_ke] = useState(0)
+  const [isZeroInterest, setIsZeroInterest] = useState(false)
   
   const [konpensasiDialog, setKonpensasiDialog] = useState<{ isOpen: boolean, newLoan: any, oldLoan: any } | null>(null)
   const { bungaPinjaman, companyName, companyLogo } = useSettingsStore()
@@ -57,13 +58,16 @@ export default function PinjamanPage() {
        return
     }
 
+    const bungaRate = isZeroInterest ? 0 : null
+
     if (isMigrationMode) {
-      addMigratedLoan(memberId, loanName, amount, migratedcicilan_ke)
+      addMigratedLoan(memberId, loanName, amount, migratedcicilan_ke, bungaRate)
     } else {
-      addLoan(memberId, loanName, amount)
+      addLoan(memberId, loanName, amount, bungaRate)
     }
     setIsModalOpen(false)
     setIsMigrationMode(false)
+    setIsZeroInterest(false)
     setMigratedcicilan_ke(0)
   }
 
@@ -355,6 +359,24 @@ export default function PinjamanPage() {
                     />
                     <label htmlFor="migrationMode" className="text-xs font-semibold text-slate-700 cursor-pointer">
                       Ini adalah pinjaman berjalan (Migrasi)
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Zero Interest Checkbox */}
+              {user?.role === "admin" && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="zeroInterestMode" 
+                      checked={isZeroInterest}
+                      onChange={(e) => setIsZeroInterest(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <label htmlFor="zeroInterestMode" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                      Jadikan Pinjaman Khusus (0% Bunga) untuk cicilan Saldo Awal
                     </label>
                   </div>
                 </div>

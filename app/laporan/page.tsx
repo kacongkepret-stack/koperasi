@@ -23,11 +23,34 @@ export default function LaporanPage() {
   const { members } = useMemberStore()
   const { loans } = useLoanStore()
   const { transactions } = useTransactionStore()
-  const { companyName, companyLogo, simpananWajibBulanan, bungaPinjaman, saldoBantuan, historicalLaba } = useSettingsStore()
+  const { companyName, companyLogo, simpananWajibBulanan, bungaPinjaman, saldoAwalSistem, historicalLaba } = useSettingsStore()
+
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
 
   const activeLoans = loans.filter(l => l.status === "Approved")
-  const currentMonthStr = new Date().toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
+  const currentMonthStr = new Date(selectedYear, selectedMonth, 1).toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
   const currentDateStr = new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })
+
+  // ----------------------------------------------------
+  // TRANSACTION FILTERING (HISTORICAL REPORTING)
+  // ----------------------------------------------------
+  const startOfMonth = new Date(selectedYear, selectedMonth, 1)
+  const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59)
+  
+  const selectedTransactions = transactions.filter(t => {
+    const d = new Date(t.created_at)
+    return d >= startOfMonth && d <= endOfMonth
+  })
+
+  const pastTransactions = transactions.filter(t => {
+    const d = new Date(t.created_at)
+    return d < startOfMonth
+  })
+
+  const totalPemasukanLalu = pastTransactions.filter(t => t.tipe !== "PENCAIRAN_PINJAMAN").reduce((a, b) => a + b.nominal, 0)
+  const totalPengeluaranLalu = pastTransactions.filter(t => t.tipe === "PENCAIRAN_PINJAMAN").reduce((a, b) => a + b.nominal, 0)
+  const totalSisaSaldoAwal = saldoAwalSistem + totalPemasukanLalu - totalPengeluaranLalu
 
   // ----------------------------------------------------
   // DATA 1: DAFTAR PEMINJAM (POTONGAN HRD)
@@ -85,39 +108,40 @@ export default function LaporanPage() {
   const shuBersih = totalLabaTahunan * 0.95
 
   // ----------------------------------------------------
-  // DATA 4: LAPORAN KEUANGAN (ARUS KAS)
+  // DATA 4: LAPORAN KEUANGAN (ARUS KAS HISTORIS)
   // ----------------------------------------------------
-  const pemasukanIuranWajib = members.length * simpananWajibBulanan
-  const pemasukanPokokPinjaman = activeLoans
-    .filter(l => l.cicilan_ke > 0)
-    .map(l => ({
-      nama: l.nama,
-      dept: members.find(m => m.nama === l.nama)?.departemen || "-",
-      nominal: l.nominal / l.tenor
-    }))
+  // 1. Pemasukan Iuran Wajib
+  const iuranWajibTransactions = selectedTransactions.filter(t => t.tipe === "SIMPANAN_WAJIB")
+  const pemasukanIuranWajib = iuranWajibTransactions.reduce((a, b) => a + b.nominal, 0)
+
+  // 2. Pemasukan Pokok Pinjaman
+  const cicilanPinjamanTransactions = selectedTransactions.filter(t => t.tipe === "CICILAN_PINJAMAN")
+  const pemasukanPokokPinjaman = cicilanPinjamanTransactions.map(t => {
+    // nama: "Cicilan Pokok I Putu Mariana"
+    const name = t.keterangan.replace("Cicilan Pokok ", "")
+    return {
+      nama: name,
+      dept: members.find(m => m.nama === name)?.departemen || "-",
+      nominal: t.nominal
+    }
+  })
   const totalPemasukanPokok = pemasukanPokokPinjaman.reduce((a, b) => a + b.nominal, 0)
 
-  const groupedBunga = activeLoans
-    .filter(l => l.cicilan_ke > 0)
-    .reduce((acc, l) => {
-      const bunga = l.nominal * (bungaPinjaman / 100)
-      acc[bunga] = (acc[bunga] || 0) + bunga
+  // 3. Pendapatan Bunga (dari transaksi, bukan dari hitungan pinjaman aktif!)
+  const groupedBunga = selectedTransactions
+    .filter(t => t.tipe === "PENDAPATAN_BUNGA")
+    .reduce((acc, t) => {
+      // ekstrak rate bunga dari keterangan, cth: "Pendapatan Bunga I Putu (Rate: 60000)"
+      const match = t.keterangan.match(/Rate:\s*(\d+(\.\d+)?)/)
+      const rate = match && match[1] ? Number(match[1]) : 0
+      acc[rate] = (acc[rate] || 0) + t.nominal
       return acc
     }, {} as Record<number, number>)
 
-  // Tambahkan juga Bunga dari Pelunasan (Konpensasi)
-  transactions.filter(t => t.tipe === "PENDAPATAN_BUNGA").forEach(t => {
-    // ekstrak rate bunga dari keterangan, cth: "Bunga Konpensasi I Putu (Rate: 60000)"
-    const match = t.keterangan.match(/Rate:\s*(\d+)/)
-    if (match && match[1]) {
-      const rate = Number(match[1])
-      groupedBunga[rate] = (groupedBunga[rate] || 0) + t.nominal
-    }
-  })
+  const totalPendapatanBungaTrans = Object.values(groupedBunga).reduce((a, b) => a + b, 0)
 
-  const totalSisaSaldoAwal = saldoBantuan
-  
-  const pemasukanPelunasanPinjaman = transactions
+  // 4. Pelunasan Pinjaman
+  const pemasukanPelunasanPinjaman = selectedTransactions
     .filter(t => t.tipe === "PELUNASAN_PINJAMAN")
     .map(t => ({
       nama: t.keterangan.replace("Pelunasan Konpensasi ", "").replace("Pelunasan Dipercepat ", ""),
@@ -125,10 +149,10 @@ export default function LaporanPage() {
     }))
   const totalPemasukanPelunasan = pemasukanPelunasanPinjaman.reduce((a, b) => a + b.nominal, 0)
 
-  const totalPemasukan = pemasukanIuranWajib + totalPemasukanPokok + totalPendapatanBungaBulanIni + totalPemasukanPelunasan + totalSisaSaldoAwal
+  const totalPemasukan = pemasukanIuranWajib + totalPemasukanPokok + totalPendapatanBungaTrans + totalPemasukanPelunasan + totalSisaSaldoAwal
 
-  // Pengeluaran (Pinjaman dicairkan) - Only real disbursements, not migrated loans
-  const pengeluaranPinjaman = transactions
+  // 5. Pengeluaran (Pinjaman dicairkan)
+  const pengeluaranPinjaman = selectedTransactions
     .filter(t => t.tipe === "PENCAIRAN_PINJAMAN")
     .map(t => ({
       nama: t.keterangan.replace("Pencairan Dana ", ""),
@@ -387,6 +411,34 @@ export default function LaporanPage() {
             <FileText size={18} className={isExportingPDF ? "animate-pulse" : "group-hover:scale-110 transition-transform"} />
             {isExportingPDF ? "Mencetak..." : "Export PDF"}
           </button>
+        </div>
+      </div>
+
+      {/* Month Filter */}
+      <div className="flex gap-3 bg-white p-3 rounded-xl border border-slate-200/60 shadow-sm w-fit">
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Bulan</label>
+          <select 
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="block w-full text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            {BULAN_NAMES.map((m, i) => (
+              <option key={m} value={i}>{m}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tahun</label>
+          <select 
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="block w-full text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
       </div>
 

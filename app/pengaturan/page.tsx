@@ -17,8 +17,8 @@ export default function PengaturanPage() {
   const { processAllInstallments, loans } = useLoanStore()
   const { processAllSimpananWajib, members } = useMemberStore()
   const { 
-    companyName, simpananWajibBulanan, bungaPinjaman, saldoBantuan, 
-    setCompanyName, setSimpananWajibBulanan, setBungaPinjaman, setSaldoBantuan, 
+    companyName, simpananWajibBulanan, bungaPinjaman, saldoAwalSistem, 
+    setCompanyName, setSimpananWajibBulanan, setBungaPinjaman, setSaldoAwalSistem, 
     departments, addDepartment, removeDepartment, expenses, addExpense, 
     lastPostedSimpananMonth, lastPostedCicilanMonth, setLastPostedSimpananMonth, setLastPostedCicilanMonth,
     historicalLaba, setHistoricalLaba 
@@ -29,7 +29,7 @@ export default function PengaturanPage() {
   const [tempName, setTempName] = useState(companyName)
   const [tempWajib, setTempWajib] = useState(simpananWajibBulanan)
   const [tempBunga, setTempBunga] = useState(bungaPinjaman)
-  const [tempBantuan, setTempBantuan] = useState(saldoBantuan)
+  const [tempAwal, setTempAwal] = useState(saldoAwalSistem)
   const [newDept, setNewDept] = useState("")
   const [expenseForm, setExpenseForm] = useState({ keterangan: "", nominal: 0 })
   const [isSaved, setIsSaved] = useState(false)
@@ -48,7 +48,7 @@ export default function PengaturanPage() {
     setCompanyName(tempName)
     setSimpananWajibBulanan(tempWajib)
     setBungaPinjaman(tempBunga)
-    setSaldoBantuan(tempBantuan)
+    setSaldoAwalSistem(tempAwal)
     setIsSaved(true)
     setTimeout(() => setIsSaved(false), 2000)
   }
@@ -190,11 +190,11 @@ export default function PengaturanPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Modal Awal / Bantuan Perusahaan (Rp)</label>
+                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">Modal Awal / Saldo Sebelum Pakai Aplikasi (Rp)</label>
                     <input 
                       type="number" 
-                      value={tempBantuan}
-                      onChange={e => setTempBantuan(Number(e.target.value))}
+                      value={tempAwal}
+                      onChange={e => setTempAwal(Number(e.target.value))}
                       className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500" 
                     />
                   </div>
