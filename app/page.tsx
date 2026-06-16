@@ -38,7 +38,14 @@ export default function Dashboard() {
     const cicilanTerbayar = transactions
       .filter(t => t.tipe === "CICILAN_PINJAMAN" && t.keterangan.includes(l.nama))
       .reduce((sum, t) => sum + t.nominal, 0)
-    return a + (l.nominal - cicilanTerbayar)
+      
+    // Asumsi cicilan bulan ini (estimasi preview) agar match dengan Laporan HRD
+    const potonganBulanIni = Math.ceil(l.nominal / l.tenor)
+    const currentMonthStr = new Date().toLocaleDateString("id-ID", { month: 'long', year: 'numeric' })
+    const hasPostedThisMonth = transactions.some(t => t.tipe === "CICILAN_PINJAMAN" && t.keterangan.includes(l.nama) && new Date(t.created_at).toLocaleDateString("id-ID", { month: 'long', year: 'numeric' }) === currentMonthStr)
+    const estimasiCicilan = hasPostedThisMonth ? 0 : potonganBulanIni
+
+    return a + (l.nominal - cicilanTerbayar - estimasiCicilan)
   }, 0)
   // Total Aset = Modal (Saldo Awal + SHU) + Kewajiban (Simpanan Terkumpul)
   // Atau secara Aktiva = Saldo Kas (Uang Brankas) + Piutang (Pinjaman Aktif)
