@@ -194,7 +194,7 @@ export const useLoanStore = create<LoanState>((set, get) => ({
         return { 
           ...loan, 
           cicilan_ke: newCicilanKe,
-          status: newCicilanKe === loan.tenor ? "Lunas" : "Approved"
+          status: (newCicilanKe === loan.tenor ? "Lunas" : "Approved") as "Lunas" | "Approved"
         }
       }
       return loan
