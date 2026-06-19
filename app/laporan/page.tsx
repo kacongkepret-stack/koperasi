@@ -114,10 +114,10 @@ export default function LaporanPage() {
     return a + (l.nominal * (bungaPinjaman / 100))
   }, 0)
 
-  // Hitung total laba setahun: bulan berjalan pakai sistem, sisanya dari history
+  // Hitung total laba setahun dari histori / database yang sudah di-post (Cash Basis)
   const totalLabaTahunan = BULAN_NAMES.reduce((acc, bulan) => {
-    if (bulan === currentMonthStr) return acc + totalPendapatanBungaBulanIni
-    return acc + (historicalLaba?.[bulan] || 0)
+    const key = `${selectedYear}-${bulan}`
+    return acc + (historicalLaba?.[key] || 0)
   }, 0)
 
   const jasaPengurus = totalLabaTahunan * 0.05
@@ -260,7 +260,7 @@ export default function LaporanPage() {
     // 3. Sheet Rugi Laba
     const ws3Data = BULAN_NAMES.map(bulan => ({
       "Bulan": bulan, 
-      "Pendapatan Bunga Pinjaman": bulan === currentMonthStr ? totalPendapatanBungaBulanIni : (historicalLaba?.[bulan] || 0)
+      "Pendapatan Bunga Pinjaman": historicalLaba?.[`${selectedYear}-${bulan}`] || 0
     }))
     ws3Data.push({ "Bulan": "Jumlah Pendapatan Bunga", "Pendapatan Bunga Pinjaman": totalLabaTahunan })
     ws3Data.push({ "Bulan": "Dikurangi: Jasa Pengurus (5%)", "Pendapatan Bunga Pinjaman": -jasaPengurus })
@@ -353,7 +353,7 @@ export default function LaporanPage() {
           body: [
             ...BULAN_NAMES.map(bulan => [
               bulan, 
-              formatRupiah(bulan === currentMonthStr ? totalPendapatanBungaBulanIni : (historicalLaba?.[bulan] || 0))
+              formatRupiah(historicalLaba?.[`${selectedYear}-${bulan}`] || 0)
             ]),
             ['Jumlah Pendapatan Bunga', formatRupiah(totalLabaTahunan)],
             ['Dikurangi: Jasa Pengurus (5%)', `-${formatRupiah(jasaPengurus)}`],
@@ -676,12 +676,15 @@ export default function LaporanPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white text-center">
-                  {BULAN_NAMES.map((bulan, idx) => (
-                    <tr key={idx} className="border-b border-slate-100">
-                      <td className="px-6 py-3 border-r border-slate-200 font-medium">{bulan}</td>
-                      <td className="px-6 py-3 text-slate-700">{formatRupiah(bulan === currentMonthStr ? totalPendapatanBungaBulanIni : (historicalLaba?.[bulan] || 0))}</td>
-                    </tr>
-                  ))}
+                  {BULAN_NAMES.map((bulan, idx) => {
+                    const laba = historicalLaba?.[`${selectedYear}-${bulan}`] || 0;
+                    return (
+                      <tr key={idx} className="border-b border-slate-100">
+                        <td className="px-6 py-3 border-r border-slate-200 font-medium">{bulan}</td>
+                        <td className="px-6 py-3 text-slate-700">{formatRupiah(laba)}</td>
+                      </tr>
+                    )
+                  })}
                   <tr className="border-t-2 border-slate-200 bg-slate-50">
                     <td className="px-6 py-3 border-r border-slate-200 font-bold text-slate-800">Jumlah Pendapatan Bunga</td>
                     <td className="px-6 py-3 text-emerald-600 font-bold">{formatRupiah(totalLabaTahunan)}</td>
