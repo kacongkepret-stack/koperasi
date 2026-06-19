@@ -144,8 +144,17 @@ export const useLoanStore = create<LoanState>((set, get) => ({
         member_id: oldLoan.member_id,
         tipe: "PENDAPATAN_BUNGA",
         nominal: totalSisaBunga,
-        keterangan: `Bunga Konpensasi ${oldLoan.nama} (Rate: ${rateBunga})`
+        keterangan: `Bunga Konpensasi ${oldLoan.nama} (Rate: ${rateBunga}%)`
       })
+
+      // NEW: Increment historicalLaba for the current month
+      if (totalSisaBunga > 0) {
+        const currentYear = new Date().getFullYear()
+        const currentMonthName = new Date().toLocaleDateString("id-ID", { month: 'long' })
+        const key = `${currentYear}-${currentMonthName}`
+        const currentLaba = useSettingsStore.getState().historicalLaba[key] || 0
+        await useSettingsStore.getState().setHistoricalLaba(key, currentLaba + totalSisaBunga)
+      }
     }
 
     // 2. Mark new loan as Approved
@@ -181,7 +190,12 @@ export const useLoanStore = create<LoanState>((set, get) => ({
     // Update local state first
     const newLoans = state.loans.map(loan => {
       if (loan.status === "Approved" && loan.cicilan_ke < loan.tenor) {
-        return { ...loan, cicilan_ke: loan.cicilan_ke + 1 }
+        const newCicilanKe = loan.cicilan_ke + 1
+        return { 
+          ...loan, 
+          cicilan_ke: newCicilanKe,
+          status: newCicilanKe === loan.tenor ? "Lunas" : "Approved"
+        }
       }
       return loan
     })
@@ -202,7 +216,13 @@ export const useLoanStore = create<LoanState>((set, get) => ({
       if (bunga > 0) totalBungaBulanIni += bunga;
 
       // Update DB
-      await supabase.from('loans').update({ cicilan_ke: l.cicilan_ke + 1 }).eq('id', l.id)
+      const isLunas = (l.cicilan_ke + 1) === l.tenor
+      await supabase.from('loans')
+        .update({ 
+          cicilan_ke: l.cicilan_ke + 1,
+          status: isLunas ? 'Lunas' : 'Approved'
+        })
+        .eq('id', l.id)
       
       // Log Pokok
       await useTransactionStore.getState().addTransaction({
@@ -225,8 +245,9 @@ export const useLoanStore = create<LoanState>((set, get) => ({
 
     // Save total interest collected this month to historicalLaba automatically
     if (totalBungaBulanIni > 0) {
+      const currentYear = new Date().getFullYear()
       const currentMonthName = new Date().toLocaleDateString("id-ID", { month: 'long' })
-      await useSettingsStore.getState().setHistoricalLaba(currentMonthName, totalBungaBulanIni)
+      await useSettingsStore.getState().setHistoricalLaba(`${currentYear}-${currentMonthName}`, totalBungaBulanIni)
     }
   },
   deleteLoan: async (id) => {
