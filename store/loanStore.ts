@@ -28,6 +28,7 @@ interface LoanState {
   addMigratedLoan: (member_id: string, nama: string, nominal: number, cicilan_ke: number, bunga_rate?: number | null) => Promise<void>
   updateLoanStatus: (id: string, status: "Approved" | "Rejected" | "Lunas") => Promise<void>
   approveWithKonpensasi: (newLoanId: string, oldLoanId: string, sisaPokok: number, totalSisaBunga: number, rateBunga: number) => Promise<void>
+  payoffEarly: (loanId: string, sisaPokok: number, totalSisaBunga: number, rateBunga: number) => Promise<void>
   processAllInstallments: () => Promise<void>
   deleteLoan: (id: string) => Promise<void>
 }
@@ -181,6 +182,52 @@ export const useLoanStore = create<LoanState>((set, get) => ({
       if (loan.id === oldLoanId) return { ...loan, status: "Lunas" as const }
       if (loan.id === newLoanId) return { ...loan, status: "Approved" as const }
       return loan
+    })
+    set({ loans: newLoans })
+  },
+  payoffEarly: async (loanId, sisaPokok, totalSisaBunga, rateBunga) => {
+    const state = get()
+    
+    // 1. Mark loan as Lunas in DB
+    const { error } = await supabase.from('loans').update({ status: 'Lunas' }).eq('id', loanId)
+    if (error) {
+      console.error("Error updating loan status:", error)
+      alert("Gagal memproses pelunasan.")
+      return
+    }
+
+    const loan = state.loans.find(l => l.id === loanId)
+    if (loan) {
+      // Log PELUNASAN_PINJAMAN (Pokok Only)
+      await useTransactionStore.getState().addTransaction({
+        member_id: loan.member_id,
+        tipe: "PELUNASAN_PINJAMAN",
+        nominal: sisaPokok,
+        keterangan: `Pelunasan Tunai Dipercepat ${loan.nama}`
+      })
+      
+      // Log PENDAPATAN_BUNGA (Sisa Bunga)
+      if (totalSisaBunga > 0) {
+        await useTransactionStore.getState().addTransaction({
+          member_id: loan.member_id,
+          tipe: "PENDAPATAN_BUNGA",
+          nominal: totalSisaBunga,
+          keterangan: `Bunga Pelunasan Dipercepat ${loan.nama} (Rate: ${rateBunga}%)`
+        })
+
+        // Increment historicalLaba for the current month
+        const currentYear = new Date().getFullYear()
+        const currentMonthName = new Date().toLocaleDateString("id-ID", { month: 'long' })
+        const key = `${currentYear}-${currentMonthName}`
+        const currentLaba = useSettingsStore.getState().historicalLaba[key] || 0
+        await useSettingsStore.getState().setHistoricalLaba(key, currentLaba + totalSisaBunga)
+      }
+    }
+
+    // 2. Update local state
+    const newLoans = state.loans.map(l => {
+      if (l.id === loanId) return { ...l, status: "Lunas" as const }
+      return l
     })
     set({ loans: newLoans })
   },

@@ -22,9 +22,10 @@ export default function PinjamanPage() {
   const [isZeroInterest, setIsZeroInterest] = useState(false)
   
   const [konpensasiDialog, setKonpensasiDialog] = useState<{ isOpen: boolean, newLoan: any, oldLoan: any } | null>(null)
+  const [pelunasanDialog, setPelunasanDialog] = useState<{ isOpen: boolean, loan: any } | null>(null)
   const { bungaPinjaman, companyName, companyLogo } = useSettingsStore()
 
-  const { amount, tenure, setAmount, setTenure, monthlyInstallment, totalPayment, loans, addLoan, addMigratedLoan, updateLoanStatus, approveWithKonpensasi, deleteLoan } = useLoanStore()
+  const { amount, tenure, setAmount, setTenure, monthlyInstallment, totalPayment, loans, addLoan, addMigratedLoan, updateLoanStatus, approveWithKonpensasi, payoffEarly, deleteLoan } = useLoanStore()
   const { user } = useAuthStore()
   const { members } = useMemberStore()
   const [searchTerm, setSearchTerm] = useState("")
@@ -118,6 +119,24 @@ export default function PinjamanPage() {
     setKonpensasiDialog(null)
   }
 
+  const executePelunasanTunai = async () => {
+    if (!pelunasanDialog) return
+    const { loan } = pelunasanDialog
+    
+    const rateBunga = loan.bunga_rate !== null && loan.bunga_rate !== undefined ? loan.bunga_rate : bungaPinjaman
+    const pokokPerBulan = loan.nominal / loan.tenor
+    const bungaPerBulan = loan.nominal * (rateBunga / 100)
+    const sisaBulan = loan.tenor - loan.cicilan_ke
+    
+    const sisaPokok = pokokPerBulan * sisaBulan
+    const totalSisaBunga = bungaPerBulan * sisaBulan
+    const totalBayar = sisaPokok + totalSisaBunga
+
+    await payoffEarly(loan.id, sisaPokok, totalSisaBunga, rateBunga)
+    printBuktiPelunasanTunai(loan, sisaPokok, totalSisaBunga, totalBayar)
+    setPelunasanDialog(null)
+  }
+
   const printBuktiPencairan = (newLoan: any, oldLoan: any, pelunasanAmount: number, pencairanBersih: number) => {
     const doc = new jsPDF({ format: 'a5' })
     
@@ -159,12 +178,54 @@ export default function PinjamanPage() {
     doc.text("(..........................)", 14, 120)
     doc.text(newLoan.nama, 14, 125)
     
-    doc.text("Disetujui Oleh,", 90, 100)
-    doc.text("(..........................)", 90, 120)
-    doc.text("Pengurus Koperasi", 90, 125)
+    doc.text("Kasir / Petugas Koperasi,", 134, 100, { align: "right" })
+    doc.text("(..........................)", 134, 120, { align: "right" })
     
-    doc.autoPrint()
-    window.open(doc.output('bloburl'), '_blank')
+    doc.save(`Bukti_Pencairan_Konpensasi_${newLoan.nama}.pdf`)
+  }
+
+  const printBuktiPelunasanTunai = (loan: any, sisaPokok: number, sisaBunga: number, totalBayar: number) => {
+    const doc = new jsPDF({ format: 'a5' })
+    
+    doc.setFontSize(14)
+    doc.setFont("helvetica", "bold")
+    doc.text(companyName || "Koperasi Karyawan", 14, 15)
+    doc.setFontSize(10)
+    doc.text("BUKTI PELUNASAN TUNAI (DIPERCEPAT)", 14, 22)
+    doc.setFont("helvetica", "normal")
+    doc.line(14, 25, 134, 25)
+    
+    doc.setFontSize(9)
+    doc.text(`Tanggal: ${new Date().toLocaleDateString("id-ID")}`, 14, 32)
+    doc.text(`Nama Anggota: ${loan.nama}`, 14, 38)
+    doc.text(`ID Pinjaman: ${loan.id.slice(0,8)}`, 14, 44)
+    
+    doc.setFont("helvetica", "bold")
+    doc.text("Rincian Pelunasan:", 14, 54)
+    doc.setFont("helvetica", "normal")
+    
+    doc.text(`Sisa Pokok Pinjaman:`, 14, 60)
+    doc.text(formatRupiah(sisaPokok), 134, 60, { align: "right" })
+    
+    doc.text(`Sisa Bunga Pinjaman:`, 14, 66)
+    doc.text(formatRupiah(sisaBunga), 134, 66, { align: "right" })
+    
+    doc.line(14, 71, 134, 71)
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    doc.text("Total Dibayar Tunai:", 14, 77)
+    doc.text(formatRupiah(totalBayar), 134, 77, { align: "right" })
+    
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(9)
+    doc.text("Yang Menyerahkan,", 14, 100)
+    doc.text("(..........................)", 14, 120)
+    doc.text(loan.nama, 14, 125)
+    
+    doc.text("Penerima / Kasir,", 134, 100, { align: "right" })
+    doc.text("(..........................)", 134, 120, { align: "right" })
+    
+    doc.save(`Bukti_Pelunasan_Tunai_${loan.nama}.pdf`)
   }
 
   return (
@@ -276,16 +337,16 @@ export default function PinjamanPage() {
                       </>
                     )}
                     {loan.status === "Approved" && user?.role === "admin" && (
-                      <button 
-                        onClick={() => {
-                          setSelectedLoan(loan)
-                          setPaymentAmount(monthlyInstallment()) // default suggest
-                          setIsPaymentModalOpen(true)
-                        }}
-                        className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-medium text-[10px] px-2 py-1 rounded transition-colors"
-                      >
-                        Input Bayar
-                      </button>
+                      <div className="flex gap-1.5">
+                        <button 
+                          onClick={() => {
+                            setPelunasanDialog({ isOpen: true, loan })
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-[10px] px-2 py-1 rounded transition-colors"
+                        >
+                          Lunas Tunai
+                        </button>
+                      </div>
                     )}
                     {user?.role === "admin" && (
                       <button 
@@ -577,6 +638,66 @@ export default function PinjamanPage() {
               </button>
               <button onClick={executeKonpensasi} className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm flex items-center gap-1.5">
                 <FileText size={14} /> Setujui & Print Bukti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pelunasan Tunai Dialog */}
+      {pelunasanDialog && pelunasanDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-emerald-50/50">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Konfirmasi Pelunasan Tunai</h2>
+                <p className="text-[10px] text-slate-500">Anggota membayar tunai sisa pinjaman</p>
+              </div>
+              <button 
+                onClick={() => setPelunasanDialog(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded hover:bg-slate-100"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-2 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Sisa Pokok ({pelunasanDialog.loan.tenor - pelunasanDialog.loan.cicilan_ke}x):</span>
+                  <span className="font-semibold text-slate-900">
+                    {formatRupiah((pelunasanDialog.loan.nominal / pelunasanDialog.loan.tenor) * (pelunasanDialog.loan.tenor - pelunasanDialog.loan.cicilan_ke))}
+                  </span>
+                </div>
+                <div className="flex justify-between text-amber-600">
+                  <span>Sisa Bunga ({pelunasanDialog.loan.bunga_rate !== null && pelunasanDialog.loan.bunga_rate !== undefined ? pelunasanDialog.loan.bunga_rate : bungaPinjaman}%):</span>
+                  <span className="font-semibold">
+                    {formatRupiah((pelunasanDialog.loan.nominal * ((pelunasanDialog.loan.bunga_rate !== null && pelunasanDialog.loan.bunga_rate !== undefined ? pelunasanDialog.loan.bunga_rate : bungaPinjaman)/100)) * (pelunasanDialog.loan.tenor - pelunasanDialog.loan.cicilan_ke))}
+                  </span>
+                </div>
+                <div className="h-px bg-slate-200 my-1"></div>
+                <div className="flex justify-between font-bold text-emerald-700">
+                  <span>Total Dibayar Tunai:</span>
+                  <span>
+                    {formatRupiah(
+                      ((pelunasanDialog.loan.nominal / pelunasanDialog.loan.tenor) + 
+                      (pelunasanDialog.loan.nominal * ((pelunasanDialog.loan.bunga_rate !== null && pelunasanDialog.loan.bunga_rate !== undefined ? pelunasanDialog.loan.bunga_rate : bungaPinjaman)/100))) * 
+                      (pelunasanDialog.loan.tenor - pelunasanDialog.loan.cicilan_ke)
+                    )}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[10.5px] text-slate-500 leading-relaxed">
+                Menyetujui akan mengubah status pinjaman menjadi Lunas, dan mencatat pemasukan Kas sebesar nilai tunai di atas.
+              </p>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+              <button onClick={() => setPelunasanDialog(null)} className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                Batal
+              </button>
+              <button onClick={executePelunasanTunai} className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm flex items-center gap-1.5">
+                <FileText size={14} /> Lunas & Print Bukti
               </button>
             </div>
           </div>
